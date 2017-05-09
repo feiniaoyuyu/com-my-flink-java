@@ -19,9 +19,9 @@
   </properties>
   
 	<modules>
- 		<module>com-pateo-flink-java</module>
-		<module>com-pateo-flink-scala</module>
-		<module>com-pateo-java</module>
+   		<module>com-pateo-flink-java-batch</module>
+
+		<module>com-pateo-flink-streaming</module>
 	</modules>
 </project>
 
