@@ -26,7 +26,7 @@ public class GeneratingTimestampsAndWatermarks {
 	public static void main(String[] args) {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-
+		AssignerWithPeriodicWatermarks<String> name ;
 		FileInputFormat myFormat = null;
 		String myFilePath = null;
 		TypeInformation typeInfo = null;

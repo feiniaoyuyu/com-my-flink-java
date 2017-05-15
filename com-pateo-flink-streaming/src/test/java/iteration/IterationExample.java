@@ -12,7 +12,9 @@ public class IterationExample {
 		
 		StreamExecutionEnvironment env = StreamExecutionEnvironment
 				.getExecutionEnvironment();
-
+  
+//		env.generateSequence(1,10).map(new MyMapper()).setBufferTimeout(timeoutMillis);
+		
 		DataStream<Long> someIntegers = env.generateSequence(0, 1000);
 
 		IterativeStream<Long> iteration = someIntegers.iterate();

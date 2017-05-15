@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.flink.api.common.state.ListState;
+import org.apache.flink.api.common.state.ListStateDescriptor;
+import org.apache.flink.api.common.typeinfo.TypeHint;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.runtime.state.FunctionInitializationContext;
 import org.apache.flink.runtime.state.FunctionSnapshotContext;
@@ -14,9 +17,12 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 //给个例子，stateful sinkfunction，在发送前先cache，
 //http://www.cnblogs.com/fxjwind/p/5633302.html
 @SuppressWarnings("deprecation")
-public class BufferingSink implements SinkFunction<Tuple2<String, Integer>>, CheckpointedFunction, CheckpointedRestoring<ArrayList<Tuple2<String, Integer>>> {
 
- 
+public class BufferingSink 
+implements SinkFunction<Tuple2<String, Integer>>, 
+CheckpointedFunction, 
+CheckpointedRestoring<ArrayList<Tuple2<String, Integer>>> {
+
 	private static final long serialVersionUID = 1L;
 
 	private final int threshold;
@@ -44,7 +50,12 @@ public class BufferingSink implements SinkFunction<Tuple2<String, Integer>>, Che
 
 	@Override
 	public void initializeState(FunctionInitializationContext context) throws Exception {
-		checkpointedState = context.getOperatorStateStore().getSerializableListState("buffered-elements"); // 通过context初始化state
+		ListStateDescriptor<Tuple2<Long, Long>> descriptor =
+	        new ListStateDescriptor<Tuple2<Long, Long>>( "buffered-elements",
+	            TypeInformation.of(new TypeHint<Tuple2<Long, Long>>() {}) );
+	            //, Tuple2.of(0L, 0L) 
+		
+		checkpointedState = context.getOperatorStateStore().getSerializableListState(descriptor.getName()); // 通过context初始化state
 
 		if (context.isRestored()) { // 如果context中有可以restore的数据
 			for (Tuple2<String, Integer> element : checkpointedState.get()) { // restore

@@ -1,7 +1,5 @@
 package state;
 
-import java.io.IOException;
-
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
@@ -9,22 +7,24 @@ import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
-//import org.apache.flink.runtime.state.filesystem.FsStateBackend;
-import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
 
-public class CountWindowAverage extends RichFlatMapFunction<Tuple2<Long, Long>, Tuple2<Long, Long>> {
+class MyCountWindowAverage extends
+		RichFlatMapFunction<Tuple2<Long, Long>, Tuple2<Long, Long>> {
 
 	private static final long serialVersionUID = 1L;
+
 	/**
 	 * The ValueState handle. The first field is the count, the second field a
 	 * running sum.
 	 */
+
 	private transient ValueState<Tuple2<Long, Long>> sum;
 
 	@Override
-	public void flatMap(Tuple2<Long, Long> input, Collector<Tuple2<Long, Long>> out) throws Exception {
+	public void flatMap(Tuple2<Long, Long> input,
+			Collector<Tuple2<Long, Long>> out) throws Exception {
 
 		// access the state value
 		Tuple2<Long, Long> currentSum = sum.value();
@@ -48,34 +48,29 @@ public class CountWindowAverage extends RichFlatMapFunction<Tuple2<Long, Long>, 
 	@SuppressWarnings("deprecation")
 	@Override
 	public void open(Configuration config) {
-		// average : the  state name
-		ValueStateDescriptor<Tuple2<Long, Long>> descriptor = new ValueStateDescriptor<>("average", 
+		ValueStateDescriptor<Tuple2<Long, Long>> descriptor = new ValueStateDescriptor<>(
+				"average", // the state name
 				TypeInformation.of(new TypeHint<Tuple2<Long, Long>>() {
 				}), // type information
-				Tuple2.of(0L, 0L));
-		// default value of the state, if nothing  was set
+				Tuple2.of(0L, 0L)); // default value of the state, if nothing  was set
 		sum = getRuntimeContext().getState(descriptor);
 	}
+}
 
-	public static void main(String[] args) throws IOException {
-		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-		// operate in Event-time
-		env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-		
-		//env.setStateBackend(new FsStateBackend("hdfs://namenode:40010/flink/checkpoints"));
+public class TestValuesState {
 
-		// this can be used in a streaming program like this (assuming we have a
-		// StreamExecutionEnvironment env)
-		env.fromElements(Tuple2.of(1L, 3L), Tuple2.of(1L, 5L), Tuple2.of(1L, 7L), Tuple2.of(1L, 4L), Tuple2.of(1L, 2L))
-			.keyBy(0)
-			.flatMap(new CountWindowAverage())
-			.print();
+	public static void main(String[] args) throws Exception {
 
-		try {
-			env.execute("-----state       +++");
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		final StreamExecutionEnvironment env = StreamExecutionEnvironment
+				.getExecutionEnvironment();
+
+		// this can be used in a streaming program like this  
+		env.fromElements(Tuple2.of(1L, 3L), 
+				Tuple2.of(1L, 5L),
+				Tuple2.of(1L, 7L),
+				Tuple2.of(1L, 4L), 
+				Tuple2.of(1L, 2L))
+				.keyBy(0).flatMap(new MyCountWindowAverage()).print();
+		env.execute();
 	}
 }
