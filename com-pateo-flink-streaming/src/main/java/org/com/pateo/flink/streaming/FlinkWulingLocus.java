@@ -13,17 +13,12 @@ import java.util.Properties;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.io.OutputFormat;
-import org.apache.flink.api.java.io.PrintingOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.streaming.api.functions.windowing.AllWindowFunction;
-import org.apache.flink.streaming.api.functions.windowing.RichAllWindowFunction;
-import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer08;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
@@ -35,20 +30,40 @@ import com.pateo.df.utils.WLContants;
 import com.pateo.telematic.utils.CordinateService;
 import com.pateo.telematic.utils.StringUtils;
 
-public class WulingLocus {
+public class FlinkWulingLocus {
 
 	   
-	private static final Logger logger = org.slf4j.LoggerFactory.getLogger(WulingLocus.class) ;
+	private static final Logger logger = org.slf4j.LoggerFactory.getLogger(FlinkWulingLocus.class) ;
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 
-		final CharSequence obd_prifix = "P011000100"; //P0110021000024
+		final CharSequence obd_prifix = "P011002100002"; //P0110021000024
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+		
+		// start a checkpoint every 1000 ms
+		env.enableCheckpointing(1000);
+
+		// advanced options:
+
+		// set mode to exactly-once (this is the default)
+		env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
+
+		// make sure 500 ms of progress happen between checkpoints
+		env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500);
+
+		// checkpoints have to complete within one minute, or are discarded
+		env.getCheckpointConfig().setCheckpointTimeout(60000);
+
+		// allow only one checkpoint to be in progress at the same time
+		env.getCheckpointConfig().setMaxConcurrentCheckpoints(1);
+		//env.setStateBackend(new FsStateBackend("hdfs://namenode:40010/flink/checkpoints"));
+
 		List<String> arrayList = new ArrayList<String>();
 		arrayList.add("navitrack");
 		SimpleStringSchema simpleStringSchema = new SimpleStringSchema();
-		// FlinkKafkaConsumer.OffsetStore.FLINK_ZOOKEEPER
+		 //FlinkKafkaConsumer.OffsetStore.FLINK_ZOOKEEPER
 		// FlinkKafkaConsumer.FetcherType.LEGACY_LOW_LEVEL
+		
 		Properties properties = new Properties();
 		properties.setProperty("bootstrap.servers", "10.1.3.17:9092,10.1.3.18:9092,10.1.3.19:9092");
 		// only required for Kafka 0.8
@@ -57,8 +72,11 @@ public class WulingLocus {
 		properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
 		// properties.setProperty("auto.offset.reset","smallest");
-		DataStream<String> messageStream = env
-				.addSource(new FlinkKafkaConsumer08<>(arrayList, simpleStringSchema, properties));
+		DataStream<String> messageStream = env.addSource(new FlinkKafkaConsumer08<>(
+						arrayList,
+						simpleStringSchema,
+						properties))//.uid("1-source-uid")
+						;
 		// DataStream<String> messageStream = env.addSource(new
 		// FlinkKafkaConsumer<String>("OAI",new SimpleStringSchema(),properties,
 		// FlinkKafkaConsumer.OffsetStore.FLINK_ZOOKEEPER,
@@ -75,7 +93,10 @@ public class WulingLocus {
 				// filter data which not satisfy the condition
 				return value != null && value.length() > 50;
 			}
-		});
+		})
+		//.uid("2-filter-uid")
+		;
+		
 		//filterStream.print();
 		
 		// second step map every log map to a hash map that contain all the key  
@@ -108,9 +129,11 @@ public class WulingLocus {
 
 						return kvMap;
 					}
-				});
+				})
+				//.uid("3-map-uid")
+				;
 		//mapStream.print() ; 
-//
+
 		 // third filter some data which value is not empty or not null and contain ob_prefix
 		SingleOutputStreamOperator<HashMap<String, String>> mapedDataSet = mapStream.filter(new FilterFunction<HashMap<String, String>>() {
 			
@@ -135,7 +158,9 @@ public class WulingLocus {
 					return dv.contains(obd_prifix);
 				}
 			}
-		}); 
+		}) 
+		//.uid("4-filter-uid")
+		; 
 		//mapedDataSet.print() ; 
 //		// fourth. map to get bd and gaode longitude and latitude 
 		mapedDataSet = mapedDataSet.map(new MapFunction<HashMap<String, String> ,HashMap<String, String> >(){
@@ -144,7 +169,7 @@ public class WulingLocus {
 
 			@Override
 			public HashMap<String, String> map(HashMap<String, String> jmap) throws Exception {
-				// TODO Auto-generated method stub
+
 				 String longitude = jmap.get(WLContants.LON) ;
 				 String latitude = jmap.get(WLContants.LAT) ;
 				 // gps -> gd
@@ -170,95 +195,19 @@ public class WulingLocus {
 				return jmap;
 			}
 			
-		} );
-		mapedDataSet.printToErr() ;
+		} ) 
+		//.uid("5-map-uid")
+		;
+		//mapedDataSet.printToErr() ;
 		//mapedDataSet.writeUsingOutputFormat(new PrintingOutputFormat<>("-------------", true)) ;
 		//env.setBufferTimeout(10000);
-		mapedDataSet.addSink(new MySinkFunction()).setParallelism(6) ;
-		
-//		mapedDataSet.countWindowAll(1000, 1000).apply(new RichAllWindowFunction<HashMap<String,String>, String, GlobalWindow>() { 
-//			private static final long serialVersionUID = 1L;
-//			public void apply(GlobalWindow window, Iterable<HashMap<String, String>> values, Collector<String> out)
-//					throws Exception {
-//			}
-//		});
- 
-//		mapedDataSet.writeUsingOutputFormat(new OutputFormat<HashMap<String,String>>() {
-//			private static final long serialVersionUID = 1L;
-//
-//			@Override
-//			public void writeRecord(HashMap<String, String> record) throws IOException {
-//				// TODO Auto-generated method stub
-//				
-//			}
-//			
-//			@Override
-//			public void open(int taskNumber, int numTasks) throws IOException {
-//				// TODO Auto-generated method stub
-//				
-//			}
-//			
-//			@Override
-//			public void configure(Configuration parameters) {
-//				// TODO Auto-generated method stub
-//				
-//			}
-//			
-//			@Override
-//			public void close() throws IOException {
-//				// TODO Auto-generated method stub
-//				
-//			}
-//		}) ;
+		mapedDataSet.addSink(new MySinkFunction())
+		//.uid("6-sink-uid")
+		//.setParallelism(6) 
+		;
+
 		System.out.println("===================add sink ================");
-//		mapedDataSet.addSink(new MySinkFunction());
-		
-		
-//		mapedDataSet.windowAll(new WindowAssigner<T, W>) ;
-//		AllWindowedStream<HashMap<String, String>, TimeWindow>  window = mapedDataSet.timeWindowAll(Time.of(5, TimeUnit.SECONDS)) ;
-//		SingleOutputStreamOperator<Tuple2<String, Integer>> map = filter
-//				.map(new MapFunction<String, Tuple2<String, Integer>>() {
-//					private static final long serialVersionUID = 1L;
-//
-//					@Override
-//					public Tuple2<String, Integer> map(String line) throws Exception {
-//						int lastIndexOf = line.indexOf("deviceid=") + "deviceid=".length();
-//						// int length = "P011002100002011".length();
-//						int offsetx = line.indexOf(", offsetx");
-//
-//						String deviceId = line.substring(lastIndexOf, offsetx);
-//						// String deviceId = line.substring(lastIndexOf,
-//						// lastIndexOf+length);
-//						// Specifying keys via field positions is only valid for
-//						// tuple data types. Type: String
-//						// 次出只能是返回tuple，因为下面是有keyBy operation
-//						return new Tuple2<String, Integer>(deviceId, 1);
-//					}
-//				}).filter(new FilterFunction<Tuple2<String, Integer>>() {
-//
-//					private static final long serialVersionUID = 1L;
-//
-//					@Override
-//					public boolean filter(Tuple2<String, Integer> value) throws Exception {
-//
-//						return value.f0.contains(obd_prifix);
-//					}
-//				});
-//		map.print();
-
-//		AllWindowedStream<Tuple2<String, Integer>, TimeWindow> timeWindowAll = map
-//				.timeWindowAll(Time.of(5, TimeUnit.SECONDS)); // Time.of(1,
-//																// TimeUnit.SECONDS)
-//		// SingleOutputStreamOperator<Tuple2<String, Integer>> window =
-//		// timeWindowAll.apply(new MyWindowAllFunction());
-//		SingleOutputStreamOperator<Integer> window = timeWindowAll.apply(new MyWindowAllFunction2());
-//
-//		window.print();
-//
-//		KeyedStream<Tuple2<String, Integer>, Tuple> keyBy = map.keyBy(0);
-//		keyBy.timeWindow(Time.of(5, TimeUnit.SECONDS));
-		// keyBy.print();
-
+ 		  
 		try {
 			env.execute("Read from Kafka example");
 		} catch (Exception e) {

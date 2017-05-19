@@ -1,5 +1,6 @@
 package org.com.pateo.flink.streaming;
 
+import java.beans.Transient;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -31,20 +31,20 @@ import com.pateo.telematic.utils.TimeUtils;
 public class MySinkFunction extends RichSinkFunction<HashMap<String, String>> {
 
 	private static final long serialVersionUID = 1L;
-	private static Configuration myConf = HBaseConfiguration.create();
-	// "wluat-hbase-srv4,wluat-hbase-srv3,wluat-hbase-srv2", "2181",
-
+	 
+	private static  Configuration  myConf = HBaseConfiguration.create();
+ 
 //	private static final String tableName_detail = "gps_locus_point_detail"; // 轨迹点详情
 //	// 包括经纬度poi信息
 //	private static final String tableName_last = "gps_locus_point_last"; // 每条轨迹最后一个点
 //	private static final String tableName_stop = "gps_locus_stop"; // 停留点
 //	private static final String tableName_city = "gps_city_distribute"; // 车辆城市分布
-//	
-	private static final String tableName_detail = "dongfeng:gps_locus_point_detail"; // 轨迹点详情
+
+	private static final String tableName_detail = "test:gps_locus_point_detail"; // 轨迹点详情
 	// 包括经纬度poi信息
-	private static final String tableName_last = "dongfeng:gps_locus_point_last"; // 每条轨迹最后一个点
-	private static final String tableName_stop = "dongfeng:gps_locus_stop"; // 停留点
-	private static final String tableName_city = "dongfeng:gps_city_distribute"; // 车辆城市分布
+	private static final String tableName_last = "test:gps_locus_point_last"; // 每条轨迹最后一个点
+	private static final String tableName_stop = "test:gps_locus_stop"; // 停留点
+	private static final String tableName_city = "test:gps_city_distribute"; // 车辆城市分布
 	
 	private static  Connection conn = null; // 获取连接
  
@@ -62,8 +62,8 @@ public class MySinkFunction extends RichSinkFunction<HashMap<String, String>> {
 	@Override
 	public void open(org.apache.flink.configuration.Configuration parameters) throws Exception {
  		
-		myConf.set("hbase.zookeeper.quorum", "10.172.10.168,10.172.10.169,10.172.10.170"); // zkQuorum
-		myConf.set("hbase.zookeeper.property.clientPort", "2181");
+		myConf.set("hbase.zookeeper.quorum", "qing-zookeeper-srv1,qing-zookeeper-srv2,qing-zookeeper-srv3"); // zkQuorum
+		myConf.set("hbase.zookeeper.property.clientPort", "21810");
 		
 		conn = HBaseConnectionTool.getConnection(myConf);
 		try {
@@ -74,7 +74,8 @@ public class MySinkFunction extends RichSinkFunction<HashMap<String, String>> {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		 
+		System.err.println( "table_city================"+table_city);
+		System.err.println( "table_detail================"+table_detail);
 		super.open(parameters);
 	}
 
@@ -86,7 +87,9 @@ public class MySinkFunction extends RichSinkFunction<HashMap<String, String>> {
 		table_detail.close();
 		table_last.close();
 		table_stop.close();
-		
+		System.err.println( "table_city================"+table_city);
+		System.err.println( "table_detail================"+table_detail);
+ 
 		super.close();
 	}
   
@@ -196,8 +199,7 @@ public class MySinkFunction extends RichSinkFunction<HashMap<String, String>> {
 			pointMap.putAll(poiMap);// 合并Map
 
 		}
-		;
-		return pointMap;
+ 		return pointMap;
 
 	}
 

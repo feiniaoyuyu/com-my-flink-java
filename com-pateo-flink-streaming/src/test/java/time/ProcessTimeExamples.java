@@ -49,7 +49,8 @@ public class ProcessTimeExamples {
 //		gpsspeed=7, bearing=196, lon=116.05722, gpsreliable=1, deviceid=P011002100007070, offsetx=620, carspeed=7, offsety=114, roadlevel=4, id=177907103, gpstime=1493344999842, updatetime=1493345030712, user=P011002100007070, lat=39.15276, direction=4}
 
 		DataStream<MyEvent> stream = env.addSource(new FlinkKafkaConsumer08<MyEvent>(topic, new MyEventSchema(), properties)); 
-//
+		//stream.countWindowAll(100, 100);
+		
 //		stream
 //		    .keyBy( (event) -> event.getUser() )
 //		    .timeWindow(Time.hours(1))

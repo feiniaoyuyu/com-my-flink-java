@@ -1,30 +1,37 @@
 package batch;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import jdbc.JDBCInputFormat;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.io.SerializedInputFormat;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.hadoop.mapred.HadoopInputFormat;
+import org.apache.flink.api.java.io.TextInputFormat;
 import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.api.java.operators.FlatMapOperator;
 import org.apache.flink.api.java.operators.ProjectOperator;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.typeutils.PojoField;
 import org.apache.flink.api.java.typeutils.PojoTypeInfo;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
+import org.apache.flink.types.StringValue;
 import org.apache.flink.util.Collector;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 
 public class WordCountExample {
-    private static final TypeInformation STRING_TYPE_INFO = null;
-	private static final TypeInformation INT_TYPE_INFO = null;
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static void main(String[] args) throws Exception {
         final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-    	final TypeInformation INT_TYPE_INFO = new PojoTypeInfo(String.class, new List<PojoField>());
+//        private static final TypeInformation STRING_TYPE_INFO = null;
+//        private static final TypeInformation INT_TYPE_INFO = null;
+        final TypeInformation STRING_TYPE_INFO =  new PojoTypeInfo(String.class, new ArrayList<String>());
+    	final TypeInformation INT_TYPE_INFO =  new PojoTypeInfo(String.class, new ArrayList<String>());
 
         DataSet<String> localLines = env.readTextFile("./dep.txt");
         localLines.print();
@@ -37,10 +44,8 @@ public class WordCountExample {
 //        DataSet<Tuple2<String, Integer>  =  
         
         new TupleTypeInfo<Tuple2<String, String>>();
-        
-        env.createInput(JDBCInputFormat.buildJDBCInputFormat(), new TupleTypeInfo(Tuple2.class, Integer, INT_TYPE_INFO)) ;
-        
-        		DataSource dbData = env.createInput(
+         
+        DataSource dbData = env.createInput(
               // create and configure input format
               JDBCInputFormat.buildJDBCInputFormat()
                              .setDrivername("org.apache.derby.jdbc.EmbeddedDriver")
