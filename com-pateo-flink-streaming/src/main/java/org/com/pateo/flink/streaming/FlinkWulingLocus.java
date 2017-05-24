@@ -82,126 +82,127 @@ public class FlinkWulingLocus {
 		// FlinkKafkaConsumer.OffsetStore.FLINK_ZOOKEEPER,
 		// FlinkKafkaConsumer.FetcherType.LEGACY_LOW_LEVEL));
 		
-		//messageStream.print(); 
+		messageStream.print(); 
 
 		// first step
-		SingleOutputStreamOperator<String> filterStream = messageStream.filter(new FilterFunction<String>() {
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public boolean filter(String value) throws Exception {
-				// filter data which not satisfy the condition
-				return value != null && value.length() > 50;
-			}
-		})
-		//.uid("2-filter-uid")
-		;
+//		SingleOutputStreamOperator<String> filterStream = messageStream.filter(new FilterFunction<String>() {
+//			private static final long serialVersionUID = 1L;
+//
+//			@Override
+//			public boolean filter(String value) throws Exception {
+//				// filter data which not satisfy the condition
+//				return value != null && value.length() > 50;
+//			}
+//		})
+//		//.uid("2-filter-uid")
+//		;
 		
 		//filterStream.print();
 		
 		// second step map every log map to a hash map that contain all the key  
-		SingleOutputStreamOperator<HashMap<String, String>> mapStream = filterStream
-				.map(new MapFunction<String, HashMap<String, String>>() {
-					private static final long serialVersionUID = 1L;
-					@Override
-					public HashMap<String, String> map(String log) throws Exception {
-
-						String[] split = null;
-						if (log.substring(1, log.length() - 1).split(", ").length > 4) {
-							split = log.substring(1, log.length() - 1).split(", ");
-						} else {
-							split = log.substring(1, log.length() - 1).split(",");
-						}
-						
-						//List<String> asList = Arrays.asList(split);
-						HashMap<String, String> kvMap = new HashMap<String, String>();
-						
-						for (String kv : split) {
-							String[] kvSplit = kv.split("=");
-							if (kvSplit.length == 2) {
-								kvMap.put(kvSplit[0], kvSplit[1]);
-							} else {
-								kvMap.put(WLContants.LAT, "0.000000");
-								
-								System.out.println("------------------- need both key and value \n" + log);
-							}
-						}
-
-						return kvMap;
-					}
-				})
-				//.uid("3-map-uid")
-				;
+//		SingleOutputStreamOperator<HashMap<String, String>> mapStream = filterStream
+//				.map(new MapFunction<String, HashMap<String, String>>() {
+//					private static final long serialVersionUID = 1L;
+//					@Override
+//					public HashMap<String, String> map(String log) throws Exception {
+//
+//						String[] split = null;
+//						if (log.substring(1, log.length() - 1).split(", ").length > 4) {
+//							split = log.substring(1, log.length() - 1).split(", ");
+//						} else {
+//							split = log.substring(1, log.length() - 1).split(",");
+//						}
+//						
+//						//List<String> asList = Arrays.asList(split);
+//						HashMap<String, String> kvMap = new HashMap<String, String>();
+//						
+//						for (String kv : split) {
+//							String[] kvSplit = kv.split("=");
+//							if (kvSplit.length == 2) {
+//								kvMap.put(kvSplit[0], kvSplit[1]);
+//							} else {
+//								kvMap.put(WLContants.LAT, "0.000000");
+//								
+//								System.out.println("------------------- need both key and value \n" + log);
+//							}
+//						}
+//
+//						return kvMap;
+//					}
+//				})
+//				//.uid("3-map-uid")
+//				;
 		//mapStream.print() ; 
 
 		 // third filter some data which value is not empty or not null and contain ob_prefix
-		SingleOutputStreamOperator<HashMap<String, String>> mapedDataSet = mapStream.filter(new FilterFunction<HashMap<String, String>>() {
-			
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public boolean filter(HashMap<String, String> pointMap) throws Exception {
-
-				if (StringUtils.isEmpty(pointMap.get( WLContants.DEVICEID)) ||
-						Float.valueOf(pointMap.get(WLContants.LAT)) < 10 || 
-						Float.valueOf(pointMap.get(WLContants.LON)) < 60) {
-					return false;
-				} else {
-					String dv = pointMap.get(WLContants.DEVICEID);
-					try {
-						dv.contains(obd_prifix) ;
-					} catch (Exception e) {
-						System.out.println("===========pointMap:\n"+pointMap);
-						e.printStackTrace();
-						System.exit(10);
-					}
-					return dv.contains(obd_prifix);
-				}
-			}
-		}) 
-		//.uid("4-filter-uid")
-		; 
+//		SingleOutputStreamOperator<HashMap<String, String>> mapedDataSet = mapStream.filter(new FilterFunction<HashMap<String, String>>() {
+//			
+//			private static final long serialVersionUID = 1L;
+//
+//			@Override
+//			public boolean filter(HashMap<String, String> pointMap) throws Exception {
+//
+//				if (StringUtils.isEmpty(pointMap.get( WLContants.DEVICEID)) ||
+//						Float.valueOf(pointMap.get(WLContants.LAT)) < 10 || 
+//						Float.valueOf(pointMap.get(WLContants.LON)) < 60) {
+//					return false;
+//				} else {
+//					String dv = pointMap.get(WLContants.DEVICEID);
+//					try {
+//						dv.contains(obd_prifix) ;
+//					} catch (Exception e) {
+//						System.out.println("===========pointMap:\n"+pointMap);
+//						e.printStackTrace();
+//						System.exit(10);
+//					}
+//					return dv.contains(obd_prifix);
+//				}
+//			}
+//		}) 
+//		//.uid("4-filter-uid")
+//		; 
+		
 		//mapedDataSet.print() ; 
 //		// fourth. map to get bd and gaode longitude and latitude 
-		mapedDataSet = mapedDataSet.map(new MapFunction<HashMap<String, String> ,HashMap<String, String> >(){
- 
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public HashMap<String, String> map(HashMap<String, String> jmap) throws Exception {
-
-				 String longitude = jmap.get(WLContants.LON) ;
-				 String latitude = jmap.get(WLContants.LAT) ;
-				 // gps -> gd
-				 Map<String, Double> gps_gd = CordinateService.gcj_encrypt(Double.valueOf(latitude ),
-						 Double.valueOf( longitude)) ;
-				 String latitude_gd = gps_gd.get(CordinateService.Lat) + "" ;
-				 String longitude_gd = gps_gd.get(CordinateService.Lon) + "" ;
-				 // gs -> bd
-				 Map<String, Double> gps_bd = CordinateService.bd_encrypt(Double.valueOf(latitude_gd),
-						 Double.valueOf(longitude_gd )) ;
-				 // gd gps
-				 jmap.put(WLContants.GD_LON, longitude_gd) ;
-				 jmap.put(WLContants.GD_LAT, latitude_gd) ;
-				 //bd gps
-				 jmap.put(WLContants.BD_LON, gps_bd.get(CordinateService.Lon) + "") ;
-				 jmap.put(WLContants.BD_LAT, gps_bd.get(CordinateService.Lat) + "");
-				 
-				 jmap.remove("id") ; // 移除id 
-				 logger.debug("--------- jmap:" + jmap) ;
-				 // 时间处理成秒
-				 jmap.put(WLContants.GPSTIME, jmap.get(WLContants.GPSTIME).substring(0, 10)) ;
-				 jmap.put(WLContants.UPDATETIME, jmap.get(WLContants.UPDATETIME).substring(0, 10)) ; 
-				return jmap;
-			}
-			
-		} ) 
-		//.uid("5-map-uid")
-		;
+//		mapedDataSet = mapedDataSet.map(new MapFunction<HashMap<String, String> ,HashMap<String, String> >(){
+// 
+//			private static final long serialVersionUID = 1L;
+//
+//			@Override
+//			public HashMap<String, String> map(HashMap<String, String> jmap) throws Exception {
+//
+//				 String longitude = jmap.get(WLContants.LON) ;
+//				 String latitude = jmap.get(WLContants.LAT) ;
+//				 // gps -> gd
+//				 Map<String, Double> gps_gd = CordinateService.gcj_encrypt(Double.valueOf(latitude ),
+//						 Double.valueOf( longitude)) ;
+//				 String latitude_gd = gps_gd.get(CordinateService.Lat) + "" ;
+//				 String longitude_gd = gps_gd.get(CordinateService.Lon) + "" ;
+//				 // gs -> bd
+//				 Map<String, Double> gps_bd = CordinateService.bd_encrypt(Double.valueOf(latitude_gd),
+//						 Double.valueOf(longitude_gd )) ;
+//				 // gd gps
+//				 jmap.put(WLContants.GD_LON, longitude_gd) ;
+//				 jmap.put(WLContants.GD_LAT, latitude_gd) ;
+//				 //bd gps
+//				 jmap.put(WLContants.BD_LON, gps_bd.get(CordinateService.Lon) + "") ;
+//				 jmap.put(WLContants.BD_LAT, gps_bd.get(CordinateService.Lat) + "");
+//				 
+//				 jmap.remove("id") ; // 移除id 
+//				 logger.debug("--------- jmap:" + jmap) ;
+//				 // 时间处理成秒
+//				 jmap.put(WLContants.GPSTIME, jmap.get(WLContants.GPSTIME).substring(0, 10)) ;
+//				 jmap.put(WLContants.UPDATETIME, jmap.get(WLContants.UPDATETIME).substring(0, 10)) ; 
+//				return jmap;
+//			}
+//			
+//		} ) 
+//		//.uid("5-map-uid")
+//		;
 		//mapedDataSet.printToErr() ;
 		//mapedDataSet.writeUsingOutputFormat(new PrintingOutputFormat<>("-------------", true)) ;
 		//env.setBufferTimeout(10000);
-		mapedDataSet.addSink(new MySinkFunction())
+		//mapedDataSet.addSink(new MySinkFunction())
 		//.uid("6-sink-uid")
 		//.setParallelism(6) 
 		;
@@ -216,55 +217,55 @@ public class FlinkWulingLocus {
 
 	}
 }
-
-class PartialModelBuilder implements AllWindowFunction<Integer, Double[], TimeWindow> {
-	private static final long serialVersionUID = 1L;
-
-	protected Double[] buildPartialModel(Iterable<Integer> values) {
-		return new Double[] { 1. };
-	}
-
-	@Override
-	public void apply(TimeWindow window, Iterable<Integer> values, Collector<Double[]> out) throws Exception {
-		out.collect(buildPartialModel(values));
-	}
-}
-
-class MyWindowAllFunction implements AllWindowFunction<Tuple2<String, Integer>, Tuple2<String, Integer>, TimeWindow> {
-
-	private static final long serialVersionUID = 1L;
-
-	@Override
-	public void apply(TimeWindow window, Iterable<Tuple2<String, Integer>> input,
-			Collector<Tuple2<String, Integer>> collector) throws Exception {
-		// New values
-		Iterator<Tuple2<String, Integer>> it = input.iterator();
-		while (it.hasNext()) {
-			Tuple2<String, Integer> tuple = it.next();
-			collector.collect(tuple);
-		}
-	}
-}
-
-class MyWindowAllFunction2 implements AllWindowFunction<Tuple2<String, Integer>, Integer, TimeWindow> {
-
-	private static final long serialVersionUID = 1L;
-
-	@Override
-	public void apply(TimeWindow window, Iterable<Tuple2<String, Integer>> input, Collector<Integer> collector)
-			throws Exception {
-		// New values
-		Iterator<Tuple2<String, Integer>> it = input.iterator();
-		Integer cnt = 0;
-		while (it.hasNext()) {
-			Tuple2<String, Integer> tuple = it.next();
-			cnt += 1;
-		}
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-
-		System.out.println(sdf.format(new Date()) + " MyWindowAllFunction2.apply()---cnt:" + cnt);
-		collector.collect(cnt);
-
-	} 
-	 
-} 
+//
+//class PartialModelBuilder implements AllWindowFunction<Integer, Double[], TimeWindow> {
+//	private static final long serialVersionUID = 1L;
+//
+//	protected Double[] buildPartialModel(Iterable<Integer> values) {
+//		return new Double[] { 1. };
+//	}
+//
+//	@Override
+//	public void apply(TimeWindow window, Iterable<Integer> values, Collector<Double[]> out) throws Exception {
+//		out.collect(buildPartialModel(values));
+//	}
+//}
+//
+//class MyWindowAllFunction implements AllWindowFunction<Tuple2<String, Integer>, Tuple2<String, Integer>, TimeWindow> {
+//
+//	private static final long serialVersionUID = 1L;
+//
+//	@Override
+//	public void apply(TimeWindow window, Iterable<Tuple2<String, Integer>> input,
+//			Collector<Tuple2<String, Integer>> collector) throws Exception {
+//		// New values
+//		Iterator<Tuple2<String, Integer>> it = input.iterator();
+//		while (it.hasNext()) {
+//			Tuple2<String, Integer> tuple = it.next();
+//			collector.collect(tuple);
+//		}
+//	}
+//}
+//
+//class MyWindowAllFunction2 implements AllWindowFunction<Tuple2<String, Integer>, Integer, TimeWindow> {
+//
+//	private static final long serialVersionUID = 1L;
+//
+//	@Override
+//	public void apply(TimeWindow window, Iterable<Tuple2<String, Integer>> input, Collector<Integer> collector)
+//			throws Exception {
+//		// New values
+//		Iterator<Tuple2<String, Integer>> it = input.iterator();
+//		Integer cnt = 0;
+//		while (it.hasNext()) {
+//			Tuple2<String, Integer> tuple = it.next();
+//			cnt += 1;
+//		}
+//		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+//
+//		System.out.println(sdf.format(new Date()) + " MyWindowAllFunction2.apply()---cnt:" + cnt);
+//		collector.collect(cnt);
+//
+//	} 
+//	 
+//} 
