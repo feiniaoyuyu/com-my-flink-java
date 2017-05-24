@@ -25,6 +25,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.async.AsyncFunction;
 import org.apache.flink.streaming.api.functions.async.RichAsyncFunction;
 import org.apache.flink.streaming.api.functions.async.collector.AsyncCollector;
+import org.apache.flink.streaming.api.functions.sink.OutputFormatSinkFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.util.Collector;
 import org.apache.hadoop.fs.Path;
@@ -309,7 +310,8 @@ public class AsyncIOExample {
 			public void flatMap(String value, Collector<Tuple2<String, Integer>> out) throws Exception {
 				out.collect(new Tuple2<>(value, 1));
 			}
-		}).keyBy(0).sum(1).map(new MapFunction<Tuple2<String,Integer>, Tuple2<Text,LongWritable>>() {
+		}).keyBy(0).sum(1) 
+		.map(new MapFunction<Tuple2<String,Integer>, Tuple2<Text,LongWritable>>() {
  
 			private static final long serialVersionUID = 1L;
 
@@ -327,16 +329,15 @@ public class AsyncIOExample {
 		//val c = class[org.apache.hadoop.io.compress.GzipCodec]
 //		org.apache.hadoop.io.compress.
 		hadoopOutputFormat.getJobConf().set("mapred.textoutputformat.separator", lineSeparator);
-		hadoopOutputFormat.getJobConf().setCompressMapOutput(true);
-		hadoopOutputFormat.getJobConf().set("mapred.output.compress", "true");
-		hadoopOutputFormat.getJobConf().setMapOutputCompressorClass(org.apache.hadoop.io.compress.GzipCodec.class);
-		hadoopOutputFormat.getJobConf().set("mapred.output.compression.codec", org.apache.hadoop.io.compress.GzipCodec.class.getCanonicalName());
-		hadoopOutputFormat.getJobConf().set("mapred.output.compression.type", CompressionType.BLOCK.toString());
+//		hadoopOutputFormat.getJobConf().setCompressMapOutput(true);
+//		hadoopOutputFormat.getJobConf().set("mapred.output.compress", "true");
+//		hadoopOutputFormat.getJobConf().setMapOutputCompressorClass(org.apache.hadoop.io.compress.GzipCodec.class);
+//		hadoopOutputFormat.getJobConf().set("mapred.output.compression.codec", org.apache.hadoop.io.compress.GzipCodec.class.getCanonicalName());
+//		hadoopOutputFormat.getJobConf().set("mapred.output.compression.type", CompressionType.BLOCK.toString());
 		
 		FileOutputFormat.setOutputPath(hadoopOutputFormat.getJobConf(), new Path("/tmp/iteblog/"));
 				
-		map.writeUsingOutputFormat(hadoopOutputFormat);
-		
+		map.addSink(new OutputFormatSinkFunction<>(hadoopOutputFormat));
 		// execute the program
 		env.execute("Async IO Example");
 	}
