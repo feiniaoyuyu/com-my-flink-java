@@ -1,5 +1,6 @@
 package checkpoint;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,8 +28,12 @@ import org.apache.flink.streaming.api.functions.async.RichAsyncFunction;
 import org.apache.flink.streaming.api.functions.async.collector.AsyncCollector;
 import org.apache.flink.streaming.api.functions.sink.OutputFormatSinkFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
+import org.apache.flink.streaming.connectors.fs.SequenceFileWriter;
+import org.apache.flink.streaming.connectors.fs.bucketing.BucketingSink;
+import org.apache.flink.streaming.connectors.fs.bucketing.DateTimeBucketer;
 import org.apache.flink.util.Collector;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.io.Text;
@@ -37,6 +42,8 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TextOutputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.sun.tools.internal.ws.wsdl.document.Import;
 /**
  * Example to illustrates how to use {@link AsyncFunction}
  */
@@ -338,6 +345,17 @@ public class AsyncIOExample {
 		FileOutputFormat.setOutputPath(hadoopOutputFormat.getJobConf(), new Path("/tmp/iteblog/"));
 				
 		map.addSink(new OutputFormatSinkFunction<>(hadoopOutputFormat));
+		
+		BucketingSink<Tuple2<Text, LongWritable>> sink = new BucketingSink<Tuple2<Text, LongWritable>> ("/base/path");
+		sink.setBucketer(new DateTimeBucketer<Tuple2<Text, LongWritable>>("yyyy-MM-dd--HHmm"));
+		sink.setWriter(new SequenceFileWriter<Text, LongWritable>());
+		
+		//sink.setWriter(new SequenceFileWriter<IntWritable, Text>()); // StringWriter
+		//(new SequenceFileWriter<IntWritable, Text>("None", org.apache.hadoop.io.SequenceFile.CompressionType.NONE));
+		sink.setBatchSize(1024 * 1024 * 400); // this is 400 MB,
+
+		map.addSink(sink);
+		
 		// execute the program
 		env.execute("Async IO Example");
 	}
