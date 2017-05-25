@@ -352,7 +352,7 @@ public class AsyncIOExample {
 		
 		//sink.setWriter(new SequenceFileWriter<IntWritable, Text>()); // StringWriter
 		//(new SequenceFileWriter<IntWritable, Text>("None", org.apache.hadoop.io.SequenceFile.CompressionType.NONE));
-		sink.setBatchSize(1024 * 1024 * 400); // this is 400 MB,
+		sink.setBatchSize((long) (1024 * 1024 * 0.1)); // 1024 * 1024 * 400 this is 400 MB,
 
 		map.addSink(sink);
 		
