@@ -7,7 +7,7 @@ syntax: glob
 #*.off
 *.old
 *.jar
-
+.cache-tests
 # eclipse conf file
 .settings
 .classpath
