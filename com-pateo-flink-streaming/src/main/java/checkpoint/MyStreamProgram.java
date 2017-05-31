@@ -44,8 +44,7 @@ public class MyStreamProgram {
 
 		env.enableCheckpointing(4000);
 
-		env.setStateBackend(new FsStateBackend(
-				"hdfs://localhost:9000/flink/checkpoints"));
+		//env.setStateBackend(new FsStateBackend( "/flink/checkpoints"));
 
 		List<String> arrayList = new ArrayList<String>();
 		arrayList.add("navitrack");
