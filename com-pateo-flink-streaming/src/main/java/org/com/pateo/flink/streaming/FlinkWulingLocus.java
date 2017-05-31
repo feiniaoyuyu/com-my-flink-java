@@ -10,12 +10,15 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.datastream.WindowedStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.GlobalWindows;
+import org.apache.flink.streaming.api.windowing.triggers.Trigger;
+import org.apache.flink.streaming.api.windowing.triggers.TriggerResult;
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.streaming.connectors.fs.SequenceFileWriter;
 import org.apache.flink.streaming.connectors.fs.bucketing.BucketingSink;
@@ -90,7 +93,6 @@ public class FlinkWulingLocus {
 		SingleOutputStreamOperator<String> filterStream = messageStream
 				.filter(new FilterFunction<String>() {
 					private static final long serialVersionUID = 1L;
-
 					@Override
 					public boolean filter(String value) throws Exception {
 						// filter data which not satisfy the condition
@@ -137,7 +139,64 @@ public class FlinkWulingLocus {
 
 		WindowedStream<Tuple2<String, Integer>, Tuple, GlobalWindow> window = mapStream
 				.keyBy(0).window(GlobalWindows.create());
+		window.trigger(new Trigger<Tuple2<String, Integer>, GlobalWindow>(){
+//			The onElement() method is called for each element that is added to a window.
+//			The onEventTime() method is called when a registered event-time timer fires.
+//			The onProcessingTime() method is called when a registered processing-time timer fires.
+//			The onMerge() method is relevant for stateful triggers and merges the states of two triggers when their corresponding windows merge, e.g. when using session windows.
+//			Finally the clear() method performs any action needed upon removal of the corresponding window.
+			private static final long serialVersionUID = 1L;
+			private volatile long count = 1L;
+			
+			@Override
+			public TriggerResult onElement(
+					Tuple2<String, Integer> element,
+					long timestamp,
+					GlobalWindow window,
+					org.apache.flink.streaming.api.windowing.triggers.Trigger.TriggerContext ctx)
+					throws Exception {
+				count ++ ;
+				//return  (count % 10000 == 0) ? TriggerResult.FIRE : TriggerResult.CONTINUE;
 
+				if (count % 100000 == 0) {
+					// if the watermark is already past the window fire immediately
+					return TriggerResult.FIRE;
+				} else {
+					ctx.registerEventTimeTimer(window.maxTimestamp());
+					return TriggerResult.CONTINUE;
+				}
+			}
+
+			@Override
+			public TriggerResult onProcessingTime(
+					long time,
+					GlobalWindow window,
+					org.apache.flink.streaming.api.windowing.triggers.Trigger.TriggerContext ctx)
+					throws Exception {
+//				return time == window.maxTimestamp() ?
+//						TriggerResult.FIRE :
+//						TriggerResult.CONTINUE;
+				return  ctx.getCurrentProcessingTime() % 10000 == 0  ? TriggerResult.FIRE: TriggerResult.CONTINUE;
+			}
+
+			@Override
+			public TriggerResult onEventTime(
+					long time,
+					GlobalWindow window,
+					org.apache.flink.streaming.api.windowing.triggers.Trigger.TriggerContext ctx)
+					throws Exception {
+				return TriggerResult.CONTINUE;
+ 			}
+
+			@Override
+			public void clear(
+					GlobalWindow window,
+					org.apache.flink.streaming.api.windowing.triggers.Trigger.TriggerContext ctx)
+					throws Exception {
+				ctx.deleteEventTimeTimer(window.maxTimestamp());
+			}
+			
+		});
 		SingleOutputStreamOperator<Tuple2<String, Integer>> reduce = window
 				.reduce(new ReduceFunction<Tuple2<String, Integer>>() {
 					private static final long serialVersionUID = 1L;
@@ -150,19 +209,21 @@ public class FlinkWulingLocus {
 						return new Tuple2<>(value1.f0, value1.f1 + value2.f1);
 					}
 				});
-		reduce.map(
-				new MapFunction<Tuple2<String, Integer>, Tuple2<IntWritable, Text>>() {
-
-					private static final long serialVersionUID = 1L;
-
-					@Override
-					public Tuple2<IntWritable, Text> map(
-							Tuple2<String, Integer> value) throws Exception {
-						return new Tuple2<IntWritable, Text>(new IntWritable(
-								value.f1), new Text(value.f0));
-					}
-				}).addSink(sink);
-
+		
+//		reduce.map(
+//				new MapFunction<Tuple2<String, Integer>, Tuple2<IntWritable, Text>>() {
+//
+//					private static final long serialVersionUID = 1L;
+//
+//					@Override
+//					public Tuple2<IntWritable, Text> map(
+//							Tuple2<String, Integer> value) throws Exception {
+//						return new Tuple2<IntWritable, Text>(new IntWritable(
+//								value.f1), new Text(value.f0));
+//					}
+//				}).addSink(sink);
+		reduce.writeAsText("/tmp/flink/mywordcount", WriteMode.OVERWRITE);
+		
 		System.out.println("===================add sink ================");
 		try {
 			env.execute("Read from Kafka example");

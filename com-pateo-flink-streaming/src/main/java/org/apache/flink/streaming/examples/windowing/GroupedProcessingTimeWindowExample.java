@@ -51,7 +51,7 @@ public class GroupedProcessingTimeWindowExample {
 						
 						final long startTime = System.currentTimeMillis();
 						
-						final long numElements = 20000000;
+						final long numElements = 2000000;
 						final long numKeys = 10000;
 						long val = 1L;
 						long count = 0L;
