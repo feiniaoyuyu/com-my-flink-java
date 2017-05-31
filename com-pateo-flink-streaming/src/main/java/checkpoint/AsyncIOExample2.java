@@ -47,9 +47,9 @@ import com.sun.tools.internal.ws.wsdl.document.Import;
 /**
  * Example to illustrates how to use {@link AsyncFunction}
  */
-public class AsyncIOExample {
+public class AsyncIOExample2 {
 
-	private static final Logger LOG = LoggerFactory.getLogger(AsyncIOExample.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AsyncIOExample2.class);
 
 	private static final String EXACTLY_ONCE_MODE = "exactly_once";
 	private static final String EVENT_TIME = "EventTime";
@@ -310,51 +310,15 @@ public class AsyncIOExample {
 		}
 
 		// add a reduce to get the sum of each keys.
-		 SingleOutputStreamOperator<Tuple2<Text, LongWritable>> map = result.flatMap(new FlatMapFunction<String, Tuple2<String, Integer>>() {
+		result.flatMap(new FlatMapFunction<String, Tuple2<String, Integer>>() {
 			private static final long serialVersionUID = -938116068682344455L;
 
 			@Override
 			public void flatMap(String value, Collector<Tuple2<String, Integer>> out) throws Exception {
 				out.collect(new Tuple2<>(value, 1));
 			}
-		}).keyBy(0).sum(1) 
-		.map(new MapFunction<Tuple2<String,Integer>, Tuple2<Text,LongWritable>>() {
+		}).keyBy(0).sum(1).writeAsText("/flink/checkpoints/output1");
  
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public Tuple2<Text, LongWritable> map(Tuple2<String, Integer> value)
-					throws Exception {
-				return new Tuple2<>(new Text(value.f0),new LongWritable(value.f1));
-			}
-			
-		});//.writeAsText("hdfs:///flink/checkpoints/output1");
-//			final String lineSeparator = System.getProperty("line.separator");
-
-		HadoopOutputFormat<Text, LongWritable> hadoopOutputFormat = 
-				new HadoopOutputFormat<Text,LongWritable>(new TextOutputFormat<Text, LongWritable>(), new JobConf());
-		//val c = class[org.apache.hadoop.io.compress.GzipCodec]
-//		org.apache.hadoop.io.compress.
-		hadoopOutputFormat.getJobConf().set("mapred.textoutputformat.separator", lineSeparator);
-//		hadoopOutputFormat.getJobConf().setCompressMapOutput(true);
-//		hadoopOutputFormat.getJobConf().set("mapred.output.compress", "true");
-//		hadoopOutputFormat.getJobConf().setMapOutputCompressorClass(org.apache.hadoop.io.compress.GzipCodec.class);
-//		hadoopOutputFormat.getJobConf().set("mapred.output.compression.codec", org.apache.hadoop.io.compress.GzipCodec.class.getCanonicalName());
-//		hadoopOutputFormat.getJobConf().set("mapred.output.compression.type", CompressionType.BLOCK.toString());
-		
-		FileOutputFormat.setOutputPath(hadoopOutputFormat.getJobConf(), new Path("/tmp/iteblog/"));
-				
-		map.addSink(new OutputFormatSinkFunction<>(hadoopOutputFormat));
-		
-		BucketingSink<Tuple2<Text, LongWritable>> sink = new BucketingSink<Tuple2<Text, LongWritable>> ("/tmp/path");
-		sink.setBucketer(new DateTimeBucketer<Tuple2<Text, LongWritable>>("yyyy-MM-dd--HHmm"));
-		sink.setWriter(new SequenceFileWriter<Text, LongWritable>());
-		
-		//sink.setWriter(new SequenceFileWriter<IntWritable, Text>()); // StringWriter
-		//(new SequenceFileWriter<IntWritable, Text>("None", org.apache.hadoop.io.SequenceFile.CompressionType.NONE));
-		sink.setBatchSize((long) (1024 * 1024 * 0.1)); // 1024 * 1024 * 400 this is 400 MB,
-
-		map.addSink(sink);
 		
 		// execute the program
 		env.execute("Async IO Example");
