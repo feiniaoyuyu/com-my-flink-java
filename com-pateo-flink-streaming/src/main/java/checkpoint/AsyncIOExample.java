@@ -331,20 +331,20 @@ public class AsyncIOExample {
 		});//.writeAsText("hdfs:///flink/checkpoints/output1");
 //			final String lineSeparator = System.getProperty("line.separator");
 
-		HadoopOutputFormat<Text, LongWritable> hadoopOutputFormat = 
-				new HadoopOutputFormat<Text,LongWritable>(new TextOutputFormat<Text, LongWritable>(), new JobConf());
+//		HadoopOutputFormat<Text, LongWritable> hadoopOutputFormat = 
+//				new HadoopOutputFormat<Text,LongWritable>(new TextOutputFormat<Text, LongWritable>(), new JobConf());
 		//val c = class[org.apache.hadoop.io.compress.GzipCodec]
 //		org.apache.hadoop.io.compress.
-		hadoopOutputFormat.getJobConf().set("mapred.textoutputformat.separator", lineSeparator);
+//		hadoopOutputFormat.getJobConf().set("mapred.textoutputformat.separator", lineSeparator);
 //		hadoopOutputFormat.getJobConf().setCompressMapOutput(true);
 //		hadoopOutputFormat.getJobConf().set("mapred.output.compress", "true");
 //		hadoopOutputFormat.getJobConf().setMapOutputCompressorClass(org.apache.hadoop.io.compress.GzipCodec.class);
 //		hadoopOutputFormat.getJobConf().set("mapred.output.compression.codec", org.apache.hadoop.io.compress.GzipCodec.class.getCanonicalName());
 //		hadoopOutputFormat.getJobConf().set("mapred.output.compression.type", CompressionType.BLOCK.toString());
 		
-		FileOutputFormat.setOutputPath(hadoopOutputFormat.getJobConf(), new Path("/tmp/iteblog/"));
+//		FileOutputFormat.setOutputPath(hadoopOutputFormat.getJobConf(), new Path("/tmp/iteblog/"));
 				
-		map.addSink(new OutputFormatSinkFunction<>(hadoopOutputFormat));
+//		map.addSink(new OutputFormatSinkFunction<>(hadoopOutputFormat));
 		
 		BucketingSink<Tuple2<Text, LongWritable>> sink = new BucketingSink<Tuple2<Text, LongWritable>> ("/tmp/path");
 		sink.setBucketer(new DateTimeBucketer<Tuple2<Text, LongWritable>>("yyyy-MM-dd--HHmm"));

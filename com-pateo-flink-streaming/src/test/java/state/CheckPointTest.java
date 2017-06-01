@@ -44,7 +44,8 @@ public class CheckPointTest {
 				  Time.of(10, TimeUnit.SECONDS) // delay)
 				  ));
 		System.out.println(env.getExecutionPlan());
-
-
+		
+//		Job submission via this interfaces requires that you have set jobmanager.web.submit.enable: true 
+//		in flink-conf.yaml.
 	}
 }
