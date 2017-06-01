@@ -41,8 +41,6 @@ class TaxiRide {
 	public static TaxiRide getTaxiRideWithId(Integer rideId) {
 		return new TaxiRide(rideId);
 	}
-
-
 }
 
 public class CheckpointedNumberSource implements SourceFunction<TaxiRide>, ListCheckpointed<Long> {
@@ -91,9 +89,7 @@ public class CheckpointedNumberSource implements SourceFunction<TaxiRide>, ListC
  			}
    
 		}
-
-		 
-
+ 
 		@Override
 		public void cancel() { }
 
