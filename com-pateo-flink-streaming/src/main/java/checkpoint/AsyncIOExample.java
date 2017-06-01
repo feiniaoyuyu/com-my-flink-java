@@ -93,7 +93,7 @@ public class AsyncIOExample {
 						start = 0;
 					}
 				}
-				Thread.sleep(5L);
+				Thread.sleep(1L);
 			}
 		}
 
