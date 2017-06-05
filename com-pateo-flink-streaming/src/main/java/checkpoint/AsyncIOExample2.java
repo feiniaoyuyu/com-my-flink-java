@@ -318,7 +318,7 @@ public class AsyncIOExample2 {
 				out.collect(new Tuple2<>(value, 1));
 			}
 		}).keyBy(0).sum(1).writeAsText("/flink/checkpoints/output1");
- 
+		// write to local file
 		
 		// execute the program
 		env.execute("Async IO Example");

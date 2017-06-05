@@ -356,6 +356,21 @@ public class AsyncIOExample {
 
 		map.addSink(sink);
 		
+		
+ 		
+		JobConf job = null;
+		// Set up the Hadoop Output Format.
+		HadoopOutputFormat<Text, LongWritable> hadoopOF =
+		// create the Flink wrapper.
+		new HadoopOutputFormat<Text, LongWritable>(	
+		// set the Hadoop OutputFormat and specify the job.
+		new TextOutputFormat<Text, LongWritable>(), job
+		);
+		hadoopOF.getJobConf().set("mapreduce.output.textoutputformat.separator", System.getProperty("line.separator"));
+		String outputPath = "";
+		TextOutputFormat.setOutputPath(job, new Path(outputPath ));
+		// Emit data
+		map.addSink(new OutputFormatSinkFunction<Tuple2<Text, LongWritable>>(hadoopOF));
 		// execute the program
 		env.execute("Async IO Example");
 	}
