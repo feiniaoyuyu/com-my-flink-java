@@ -7,7 +7,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.RichProcessFunction;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
 
 public class SideOutPut {
@@ -28,7 +28,7 @@ public class SideOutPut {
 		Tuple1<Integer> tuple1 = new Tuple1<Integer>(1);
 		 
 		DataStream<Integer> input = env.fromElements(1, 2);
-		new RichProcessFunction<Integer, Integer>() {
+		new ProcessFunction<Integer, Integer>() {
 
 			private static final long serialVersionUID = 1L;
 
@@ -42,14 +42,6 @@ public class SideOutPut {
 				// ctx.output(outputTag, "sideout-" + String.valueOf(value));
 			}
 
-			@Override
-			public void onTimer(
-					long timestamp,
-					org.apache.flink.streaming.api.functions.ProcessFunction.OnTimerContext ctx,
-					Collector<Integer> out) throws Exception {
-				// TODO Auto-generated method stub
-
-			}
 		};
  
 //				.process(new RichProcessFunction<Integer, Integer>() {
