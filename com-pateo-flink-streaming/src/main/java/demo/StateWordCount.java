@@ -14,7 +14,8 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
-
+//flink run -c demo.StateWordCount /data/sparkjob/com-my-flink-java/com-pateo-flink-streaming/target/com-pateo-flink-streaming-1.0.jar                             
+//flink cancel -s /tmp/path/sp f60258cd28e2bf40e2576130548eafee
 public class StateWordCount {
 
 	public static void main(String[] args) {
@@ -57,7 +58,7 @@ public class StateWordCount {
  				return value;
 			}
 		});
-		map.keyBy(0).sum(1).writeAsText("/tmp/path/result", WriteMode.OVERWRITE);
+		map.keyBy(0).sum(1).writeAsText("hdfs:///tmp/path/result", WriteMode.OVERWRITE);
 //		Object job;
 //		OutputFormat mapreduceOutputFormat;
 		//OutputFormat<Tuple2<String, Integer>> format = new HadoopOutputFormat<>(mapreduceOutputFormat, job);
