@@ -81,7 +81,7 @@ public class StateWordCount {
 				"Jordan", "DuLante", "Zhouqi", "Kaka", "Yaoming", "Maidi",
 				"YiJianlian" };
 		// private Character[] chars;
-		private static int iteratorTime = 10;
+		private  int iteratorTime = 10;
 		//private Random rand = new Random();
 		private volatile boolean isRunning = true;
 

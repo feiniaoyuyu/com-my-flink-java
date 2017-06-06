@@ -1,20 +1,21 @@
 package source;
 
-import java.io.IOException;
-
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.operators.DataSource;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 
 public class ReadingFromHadoopFile {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 
 		final ExecutionEnvironment env = ExecutionEnvironment
 				.getExecutionEnvironment();
 
-		String inputPath = "";
-		org.apache.flink.api.java.hadoop.mapreduce.HadoopInputFormat<LongWritable, Text> hadoopFile = org.apache.flink.hadoopcompatibility.HadoopInputs
+		String inputPath = "/tmp/wl_markfile.log";
+		org.apache.flink.api.java.hadoop.mapreduce.HadoopInputFormat<LongWritable, Text> hadoopFile = 
+				org.apache.flink.hadoopcompatibility.HadoopInputs
 				.readHadoopFile(
 						new org.apache.hadoop.mapreduce.lib.input.TextInputFormat(), // extends
 																						// org.apache.hadoop.mapreduce.lib.input.FileInputFormat
@@ -22,8 +23,15 @@ public class ReadingFromHadoopFile {
 						org.apache.hadoop.io.Text.class,
 
 						inputPath);
-
+		DataSource<Tuple2<LongWritable, Text>> createInput = env.createInput(hadoopFile);
+		createInput.print();
+//		OutputFormat mapreduceOutputFormat;
+//		Job job;
+//		HadoopOutputFormat outputFormat = new HadoopOutputFormat(mapreduceOutputFormat, job);
+		//String filePath = "/tmp/wl_markfile.log2";
+		//createInput.write(outputFormat, filePath);
 	}
+	
 }
 //import org.apache.hadoop.fs.Path
 //import org.apache.hadoop.io.SequenceFile.CompressionType

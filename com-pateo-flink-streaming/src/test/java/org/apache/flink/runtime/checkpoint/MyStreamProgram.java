@@ -1,13 +1,19 @@
-package checkpoint;
+package org.apache.flink.runtime.checkpoint;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
+import org.apache.flink.api.common.functions.RichReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.runtime.state.filesystem.FsStateBackend;
+import org.apache.flink.streaming.api.checkpoint.ListCheckpointed;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.windowing.time.Time;
@@ -18,6 +24,7 @@ import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.util.Collector;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -67,23 +74,70 @@ public class MyStreamProgram {
 						simpleStringSchema, properties))// .uid("1-source-uid")
 		;
 
-		messageStream.map(new RichMapFunction<String, Tuple2<String, Integer>>(){
-					
-				
+		KeyedStream<Tuple2<String, Integer>, Tuple> keyBy = messageStream.map(new RichMapFunction<String, Tuple2<String, Integer>>(){
+					 
 					private static final long serialVersionUID = 1L;
 
 					@Override
-					public Tuple2<String, Integer> map(String arg)
-							throws Exception {
-						String[] line = arg.split(",");
-						return new Tuple2<String, Integer>(line[0], Integer
-								.parseInt(line[1]));
+					public Tuple2<String, Integer> map(String arg) throws Exception {
+						String[] line = arg.split(" ");
+						return new Tuple2<String, Integer>(line[0], Integer.parseInt(line[1]));
 					}
-				}).keyBy(0).timeWindow(Time.of(5, TimeUnit.SECONDS))
-				.apply(new MyMaxWithState()).print();
+				}).keyBy(0);
+		keyBy.reduce(new RichReduceFunction<Tuple2<String,Integer>>() {
+		 
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public Tuple2<String, Integer> reduce(
+					Tuple2<String, Integer> value1,
+					Tuple2<String, Integer> value2) throws Exception {
+				
+				return null;
+			}
+		});
+		
+//				.timeWindow(Time.of(5, TimeUnit.SECONDS))
+//				.apply(new MyMaxWithState()).print();
 		env.execute("Kafka example");
 
 	}
+}
+
+class WordStateMapFunction 
+extends RichFlatMapFunction<String, Tuple2<String, Integer>> 
+implements ListCheckpointed<Tuple2<String, Integer>>{
+ 
+	private static final long serialVersionUID = 1L;
+ 	private final String dataFilePath = "";
+	private final int servingSpeed = 2;
+ 
+	List<Tuple2<String, Integer>> state = new ArrayList<Tuple2<String, Integer>> ();
+	 
+	@Override
+	public List<Tuple2<String, Integer>> snapshotState(long checkpointId, long checkpointTimestamp) throws Exception {
+	 
+		return state;
+	}
+
+	@Override
+	public void restoreState(List<Tuple2<String, Integer>> state) throws Exception {
+		for (Tuple2<String, Integer> tuple2 : state) {
+			this.state.add(tuple2);			
+		}
+		//this.eventCnt = s;
+	}
+
+	@Override
+	public void flatMap(String value, Collector<Tuple2<String, Integer>> out)
+			throws Exception {
+		String[] split = value.split(" ");
+		for (String string : split) {
+			out.collect(new Tuple2<>(string,1));
+		}
+	}
+	
+	
 }
 
 class MyMaxWithState extends RichWindowFunction<Tuple2<String, Integer>, Tuple2<String, Integer>, Tuple, TimeWindow> {
