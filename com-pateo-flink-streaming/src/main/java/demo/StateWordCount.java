@@ -30,7 +30,7 @@ import org.apache.flink.util.Collector;
 //flink cancel -s /tmp/path/sp f60258cd28e2bf40e2576130548eafee
 public class StateWordCount {
 
-	@SuppressWarnings("unchecked")
+	
 	public static void main(String[] args) {
 
 		// Checking input parameters
@@ -49,18 +49,18 @@ public class StateWordCount {
 		// get input data
 		DataStreamSource<Tuple2<String, Integer>> inputDS = env.addSource(new WordSourceCheckpoint(1000));
 		
-		SingleOutputStreamOperator<Tuple2<String, Integer>> map = inputDS.map(new RichMapFunction<Tuple2<String,Integer>, Tuple2<String,Integer>>() {
- 
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public Tuple2<String, Integer> map(Tuple2<String, Integer> value)
-					throws Exception {
- 				return value;
-			}
-		});
-		 ;
-		map
+//		SingleOutputStreamOperator<Tuple2<String, Integer>> map = inputDS.map(new RichMapFunction<Tuple2<String,Integer>, Tuple2<String,Integer>>() {
+// 
+//			private static final long serialVersionUID = 1L;
+//
+//			@Override
+//			public Tuple2<String, Integer> map(Tuple2<String, Integer> value)
+//					throws Exception {
+// 				return value;
+//			}
+//		});
+		 
+		inputDS
 		.keyBy(0)
 		.flatMap(new WordState())
 //		.timeWindowAll(Time.seconds(2), Time.seconds(2)).process(new ReduceApplyProcessAllWindowFunction<>(new ReduceFunction<Tuple2<String, Integer>>() {
@@ -108,12 +108,14 @@ public class StateWordCount {
 				"Jordan", "DuLante", "Zhouqi", "Kaka", "Yaoming", "Maidi",
 				"YiJianlian" };
 		// private Character[] chars;
-		private  int iteratorTime = 10;
+		private volatile int iteratorTime = 10;
 		//private Random rand = new Random();
 		private volatile boolean isRunning = true;
+		private volatile int sleepTime = 100 ;
 
 		private WordSourceCheckpoint(int numOfCars) {
 			super();
+			
 			iteratorTime = numOfCars;
 		}
 
@@ -132,7 +134,7 @@ public class StateWordCount {
 
 			while (isRunning && iteratorTime!=0) {
 				
-				Thread.sleep(100);
+				Thread.sleep(sleepTime);
 				
 				for (int id = 0; id < words.length; id++) {
 					Tuple2<String, Integer> record = new Tuple2<>(words[id], 1);
