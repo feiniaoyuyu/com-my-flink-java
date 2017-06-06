@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.examples.windowing;
+package demo;
 
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -32,7 +32,6 @@ import java.util.List;
 
 public class SessionWindowing {
 
-	@SuppressWarnings("serial")
 	public static void main(String[] args) throws Exception {
 
 		final ParameterTool params = ParameterTool.fromArgs(args);
