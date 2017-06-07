@@ -40,29 +40,30 @@ public class StateWordCount {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment
 				.getExecutionEnvironment();
 
-		// make parameters available in the web interface
-		//env.getConfig().setGlobalJobParameters(params);
-		env.enableCheckpointing(3000);
-		env.setBufferTimeout(1000);
-		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(10, org.apache.flink.api.common.time.Time.seconds(10)));
-
+ 		//env.getConfig().setGlobalJobParameters(params);
+//		env.enableCheckpointing(1000);
+//		env.setBufferTimeout(100);
+//		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(10, org.apache.flink.api.common.time.Time.seconds(10)));
+		env.setMaxParallelism(4);
+		int defaultLocalParallelism = StreamExecutionEnvironment.getDefaultLocalParallelism();
+		StreamExecutionEnvironment.setDefaultLocalParallelism(1);
+		System.out.println( "defaultLocalParallelism :" +defaultLocalParallelism );
 		// get input data
-		DataStreamSource<Tuple2<String, Integer>> inputDS = env.addSource(new WordSourceCheckpoint(1000));
+		DataStreamSource<Tuple2<String, Integer>> inputDS = env.addSource( WordSourceCheckpoint.create(1));
 		
-//		SingleOutputStreamOperator<Tuple2<String, Integer>> map = inputDS.map(new RichMapFunction<Tuple2<String,Integer>, Tuple2<String,Integer>>() {
-// 
-//			private static final long serialVersionUID = 1L;
-//
-//			@Override
-//			public Tuple2<String, Integer> map(Tuple2<String, Integer> value)
-//					throws Exception {
-// 				return value;
-//			}
-//		});
-		 
+		//inputDS.countWindowAll(100).sum(1).setMaxParallelism(1).print();
+		
+//		env.fromElements(Tuple2.of(1L, 3L), Tuple2.of(1L, 5L), Tuple2.of(1L, 7L), Tuple2.of(1L, 4L), Tuple2.of(1L, 2L))
+//        .keyBy(0)
+//        //.flatMap(new CountWindowAverage())
+//        .print();
+		
+		
 		inputDS
-		.keyBy(0)
-		.flatMap(new WordState())
+		//.setParallelism(1)
+//		.keyBy(0)
+		//.sum(1)
+//		.flatMap(new WordState())
 //		.timeWindowAll(Time.seconds(2), Time.seconds(2)).process(new ReduceApplyProcessAllWindowFunction<>(new ReduceFunction<Tuple2<String, Integer>>() {
 //
 //			@Override
@@ -90,16 +91,15 @@ public class StateWordCount {
 		//OutputFormat<Tuple2<String, Integer>> format = new HadoopOutputFormat<>(mapreduceOutputFormat, job);
 		//map.keyBy(0).sum(1).writeUsingOutputFormat(format)
 		try {
+			System.out.println("----------------execute ------------");
 			env.execute();
+			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 	}
 
-	static class WordSourceCheckpoint 
-	extends RichSourceFunction<Tuple2<String, Integer>>
+	private static class WordSourceCheckpoint  extends RichSourceFunction<Tuple2<String, Integer>>
 	//implements ListCheckpointed<Tuple2<String, Integer>>
 	{
 		private static final long serialVersionUID = 1L;
@@ -108,42 +108,40 @@ public class StateWordCount {
 				"Jordan", "DuLante", "Zhouqi", "Kaka", "Yaoming", "Maidi",
 				"YiJianlian" };
 		// private Character[] chars;
-		private volatile int iteratorTime = 10;
+		private volatile int iteratorTime = 1;
 		//private Random rand = new Random();
 		private volatile boolean isRunning = true;
-		private volatile int sleepTime = 100 ;
+		private volatile int sleepTime = 1 ;
 
-		private WordSourceCheckpoint(int numOfCars) {
-			super();
-			
-			iteratorTime = numOfCars;
+		private WordSourceCheckpoint(int numOfIter) {
+ 			iteratorTime = numOfIter;
 		}
 
-		public static WordSourceCheckpoint create(int cars) {
-			return new WordSourceCheckpoint(cars);
+		public static WordSourceCheckpoint create(int numOfIter) {
+			return new WordSourceCheckpoint(numOfIter);
 		}
-		@Override
-		public void open(Configuration parameters) throws Exception {
-			super.open(parameters);
-		}
+//		@Override
+//		public void open(Configuration parameters) throws Exception {
+//			super.open(parameters);
+//		}
 
 		@Override
 		public void run(
 				org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext<Tuple2<String, Integer>> ctx)
 				throws Exception {
-
-			while (isRunning && iteratorTime!=0) {
-				
+			while (isRunning  && iteratorTime!=0) { // 
 				Thread.sleep(sleepTime);
-				
 				for (int id = 0; id < words.length; id++) {
 					Tuple2<String, Integer> record = new Tuple2<>(words[id], 1);
 					ctx.collectWithTimestamp(record, System.currentTimeMillis());
 					ctx.collect(record);
+					System.out.println("--Thread name:" + Thread.currentThread().getName());
+
 					ctx.emitWatermark(new Watermark(System.currentTimeMillis()));
 				}
 				synchronized (this) {
-					iteratorTime-=1;
+					iteratorTime -= 1;
+					System.out.println("--Thread iteratorTime:" + Thread.currentThread().getName());
 				}
 			}
 		}
@@ -152,18 +150,6 @@ public class StateWordCount {
 		public void cancel() {
 			isRunning = false;
 		}
-		 
-//		@Override
-//		public List<Tuple2<String, Integer>> snapshotState(long checkpointId, long checkpointTimestamp) throws Exception {
-//			return Collections.singletonList(iteratorTime);
-//		}
-//
-//		@Override
-//		public void restoreState(List<Tuple2<String, Integer>> state)
-//				throws Exception {
-//			
-//		}
-		 
 	}
 	
 	static class WordState extends RichFlatMapFunction<Tuple2<String ,Integer>, Tuple2<String ,Integer>> {
