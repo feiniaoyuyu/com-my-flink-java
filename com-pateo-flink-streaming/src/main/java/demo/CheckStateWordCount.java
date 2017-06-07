@@ -1,5 +1,7 @@
 package demo;
 
+import java.util.List;
+
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichFunction;
@@ -9,6 +11,7 @@ import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.api.checkpoint.ListCheckpointed;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
@@ -32,7 +35,7 @@ public class CheckStateWordCount {
 				.getExecutionEnvironment();
 
 		// env.getConfig().setGlobalJobParameters(params);
-		// env.enableCheckpointing(1000);
+		 env.enableCheckpointing(1000);
 		// env.setBufferTimeout(100);
 		// env.setRestartStrategy(RestartStrategies.fixedDelayRestart(10,
 		// org.apache.flink.api.common.time.Time.seconds(10)));
@@ -44,16 +47,13 @@ public class CheckStateWordCount {
 				+ defaultLocalParallelism);
 		// get input data
 		BucketingSink<Tuple2<Text, LongWritable>> sink = new BucketingSink<Tuple2<Text, LongWritable>> ("hdfs:///tmp/path/wc");
-		sink.setBucketer(new DateTimeBucketer<Tuple2<Text, LongWritable>>("yyyy-MM-dd--HHmm"));
+		sink.setBucketer(new DateTimeBucketer<Tuple2<Text, LongWritable>>("yyyy-MM-dd-HH-mm"));
 		sink.setWriter(new SequenceFileWriter<Text, LongWritable>());
 		
 		//(new SequenceFileWriter<IntWritable, Text>("None", org.apache.hadoop.io.SequenceFile.CompressionType.NONE));
 		sink.setBatchSize((long) (1024 * 1024 * 0.01)); // 1024 * 1024 * 400 this is 400 MB,
 
-		DataStreamSource<Tuple2<String, Integer>> inputDS = 
-				env
-				.setParallelism(1)
-				.addSource(WordSourceCheckpoint.create(100000));
+		DataStreamSource<Tuple2<String, Integer>> inputDS = env.addSource(WordSourceCheckpoint.create(10000));
 
 		inputDS
 		.keyBy(0)
@@ -81,7 +81,7 @@ public class CheckStateWordCount {
 	}
 
 	private static class WordSourceCheckpoint extends
-			RichSourceFunction<Tuple2<String, Integer>> {
+			RichSourceFunction<Tuple2<String, Integer>> implements ListCheckpointed<Tuple2<String, Integer>> {
 		private static final long serialVersionUID = 1L;
 		private static final String[] words = { "James", "Kobe", "Antony",
 				"Jordan", "DuLante", "Zhouqi", "Kaka", "Yaoming", "Maidi",
@@ -90,6 +90,7 @@ public class CheckStateWordCount {
 		// private Random rand = new Random();
 		private volatile boolean isRunning = true;
 		private volatile int sleepTime = 10;
+		private volatile int idRecord = 0;
 
 		private WordSourceCheckpoint(int numOfIter) {
 			iteratorTime = numOfIter;
@@ -110,16 +111,21 @@ public class CheckStateWordCount {
 				throws Exception {
 			while (isRunning && iteratorTime != 0) { //
 				Thread.sleep(sleepTime);
+				
 				for (int id = 0; id < words.length; id++) {
+					idRecord = id;
 					Tuple2<String, Integer> record = new Tuple2<>(words[id], 1);
 					ctx.collectWithTimestamp(record, System.currentTimeMillis());
 					// ctx.collect(record);
 					//System.out.println("--Thread name:" + Thread.currentThread().getName());
-
+					
 					ctx.emitWatermark(new Watermark(System.currentTimeMillis()));
+					
 				}
 				synchronized (this) {
+					
 					iteratorTime -= 1;
+					
 					//System.out.println("--Thread iteratorTime:"	+ Thread.currentThread().getName());
 				}
 			}
@@ -134,6 +140,19 @@ public class CheckStateWordCount {
 		public void close() throws Exception {
 			isRunning = false;
 			super.close();
+		}
+
+		@Override
+		public void restoreState(List<Tuple2<String, Integer>> paramList)
+				throws Exception {
+			
+		}
+
+		@Override
+		public List<Tuple2<String, Integer>> snapshotState(long paramLong1,
+				long paramLong2) throws Exception {
+
+			return null;
 		}
 	}
 
@@ -181,7 +200,9 @@ public class CheckStateWordCount {
 			}
 		}
 	}
-	static class MyProcessAllWindowFunction extends ProcessAllWindowFunction<Tuple2<String, Integer>, Tuple2<String, Integer>, GlobalWindow> implements RichFunction{
+	static class MyProcessAllWindowFunction
+	extends ProcessAllWindowFunction<Tuple2<String, Integer>, Tuple2<String, Integer>, GlobalWindow>
+	implements RichFunction{
  
 		private static final long serialVersionUID = 1L;
 		private transient MapState<String, Integer> sum;
