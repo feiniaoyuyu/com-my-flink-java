@@ -28,6 +28,8 @@ import org.apache.flink.util.Collector;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 
+import scala.reflect.internal.Trees.This;
+
 public class CheckStateWordCount {
 
 	public static void main(String[] args) {
@@ -39,7 +41,7 @@ public class CheckStateWordCount {
 		// env.getConfig().setGlobalJobParameters(params);
 		 env.enableCheckpointing(1000);
 		// env.setBufferTimeout(100);
-//		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(10, org.apache.flink.api.common.time.Time.seconds(10)));
+		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(10, org.apache.flink.api.common.time.Time.seconds(10)));
 		env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
 		// make sure 500 ms of progress happen between checkpoints
 		env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500);
@@ -98,7 +100,7 @@ public class CheckStateWordCount {
 		private volatile boolean isRunning = true;
 		private volatile int sleepTime = 1;
 		private volatile int idRecord = 0;
-
+		private volatile String exception = "0";
 		private WordSourceCheckpoint(int numOfIter) {
 			totalCot = numOfIter;
 		}
@@ -125,6 +127,10 @@ public class CheckStateWordCount {
 
 				//System.out.println("--Thread name:" + Thread.currentThread().getName());
 				ctx.emitWatermark(new Watermark(System.currentTimeMillis()));
+				if (idRecord==999 && exception.equals( "0")) {
+					exception = "112211";
+					throw new Exception("reach cnt " + idRecord);
+				}
 				synchronized (this) {
 					idRecord += 1;
 				}
@@ -146,13 +152,16 @@ public class CheckStateWordCount {
 		public void restoreState(List<Tuple2<String, Integer>> paramList)
 				throws Exception {
 			for (Tuple2<String, Integer> tuple2 : paramList) 
+			{
 				this.idRecord = tuple2.f1;
+				this.exception = tuple2.f0;
+			}
 		}
 
 		@Override
 		public List<Tuple2<String, Integer>> snapshotState(long paramLong1,
 				long paramLong2) throws Exception {
-			return Collections.singletonList(new Tuple2<String, Integer>("idRecord", this.idRecord));
+			return Collections.singletonList(new Tuple2<String, Integer>(this.exception, this.idRecord));
 		}
 	}
 
