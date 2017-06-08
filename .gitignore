@@ -8,6 +8,7 @@ syntax: glob
 *.old
 *.jar
 .cache-tests
+.classpath
 # eclipse conf file
 .settings
 .classpath
