@@ -129,8 +129,11 @@ public class CheckStateWordCount {
 				//System.out.println("--Thread name:" + Thread.currentThread().getName());
 				ctx.emitWatermark(new Watermark(System.currentTimeMillis()));
 				if (idRecord==999 && exception.equals( "0")) {
+					System.out.println(System.currentTimeMillis() + "===========idRecord============" +idRecord);
+
 					exception = "112211";
 					throw new Exception("reach cnt " + idRecord);
+
 				}
 				synchronized (this) {
 					idRecord += 1;
@@ -140,11 +143,15 @@ public class CheckStateWordCount {
 
 		@Override
 		public void cancel() {
+			System.out.println(System.currentTimeMillis() + "===========cancel============" +idRecord);
+
 			isRunning = false;
 		}
 
 		@Override
 		public void close() throws Exception {
+			System.out.println(System.currentTimeMillis() + "===========close============" +idRecord);
+
 			isRunning = false;
 			super.close();
 		}
@@ -154,6 +161,8 @@ public class CheckStateWordCount {
 				throws Exception {
 			for (Tuple2<String, Integer> tuple2 : paramList) 
 			{
+				System.out.println(System.currentTimeMillis() + "===========restoreState============" +idRecord);
+
 				this.idRecord = tuple2.f1;
 				this.exception = "1234321";
 			}
@@ -162,6 +171,8 @@ public class CheckStateWordCount {
 		@Override
 		public List<Tuple2<String, Integer>> snapshotState(long paramLong1,
 				long paramLong2) throws Exception {
+			System.out.println(System.currentTimeMillis() + "===========snapshotState============" +idRecord);
+
 			return Collections.singletonList(new Tuple2<String, Integer>(this.exception, this.idRecord));
 		}
 	}
