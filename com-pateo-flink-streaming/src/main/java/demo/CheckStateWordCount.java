@@ -39,13 +39,13 @@ public class CheckStateWordCount {
 		// env.getConfig().setGlobalJobParameters(params);
 		 env.enableCheckpointing(1000);
 		// env.setBufferTimeout(100);
-		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(10, org.apache.flink.api.common.time.Time.seconds(10)));
+//		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(10, org.apache.flink.api.common.time.Time.seconds(10)));
 		env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
 		// make sure 500 ms of progress happen between checkpoints
 		env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500);
 
 		// checkpoints have to complete within one minute, or are discarded
-		env.getCheckpointConfig().setCheckpointTimeout(60000);
+		env.getCheckpointConfig().setCheckpointTimeout(6000);
 		
 		int defaultLocalParallelism = StreamExecutionEnvironment.getDefaultLocalParallelism();
 		//StreamExecutionEnvironment.setDefaultLocalParallelism(1);
@@ -59,6 +59,8 @@ public class CheckStateWordCount {
 		sink.setBatchSize((long) (1024 * 1024 * 0.01)); // 1024 * 1024 * 400 this is 400 MB,
 
 		DataStreamSource<Tuple2<String, Integer>> inputDS = env.addSource(WordSourceCheckpoint.create(10000));
+
+		inputDS.print();
 
 		inputDS
 		.keyBy(0)
