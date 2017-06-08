@@ -48,7 +48,7 @@ public class CheckStateWordCount {
 		env.getCheckpointConfig().setCheckpointTimeout(60000);
 		
 		int defaultLocalParallelism = StreamExecutionEnvironment.getDefaultLocalParallelism();
-		StreamExecutionEnvironment.setDefaultLocalParallelism(1);
+		//StreamExecutionEnvironment.setDefaultLocalParallelism(1);
 		System.out.println("defaultLocalParallelism :" + defaultLocalParallelism);
 		// get input data
 		BucketingSink<Tuple2<Text, LongWritable>> sink = new BucketingSink<Tuple2<Text, LongWritable>> ("hdfs:///tmp/path/wc");
@@ -56,7 +56,7 @@ public class CheckStateWordCount {
 		sink.setWriter(new SequenceFileWriter<Text, LongWritable>());
 		
 		//(new SequenceFileWriter<IntWritable, Text>("None", org.apache.hadoop.io.SequenceFile.CompressionType.NONE));
-		sink.setBatchSize((long) (1024 * 1024 * 0.1)); // 1024 * 1024 * 400 this is 400 MB,
+		sink.setBatchSize((long) (1024 * 1024 * 0.01)); // 1024 * 1024 * 400 this is 400 MB,
 
 		DataStreamSource<Tuple2<String, Integer>> inputDS = env.addSource(WordSourceCheckpoint.create(10000));
 
@@ -94,7 +94,7 @@ public class CheckStateWordCount {
 		private volatile int totalCot= 0;
 		// private Random rand = new Random();
 		private volatile boolean isRunning = true;
-		private volatile int sleepTime = 10;
+		private volatile int sleepTime = 1;
 		private volatile int idRecord = 0;
 
 		private WordSourceCheckpoint(int numOfIter) {
@@ -117,16 +117,14 @@ public class CheckStateWordCount {
 			
 			while (isRunning && idRecord <= totalCot ) { //
 				Thread.sleep(sleepTime);
-				for (int id = idRecord; id < totalCot; id++) {
-					idRecord = id;
-					Tuple2<String, Integer> record = new Tuple2<>(words[id%words.length], 1);
-					ctx.collectWithTimestamp(record, System.currentTimeMillis());
+				
+				Tuple2<String, Integer> record = new Tuple2<>(words[idRecord % words.length], 1);
+				ctx.collectWithTimestamp(record, System.currentTimeMillis());
 
-					//System.out.println("--Thread name:" + Thread.currentThread().getName());
-					ctx.emitWatermark(new Watermark(System.currentTimeMillis()));
-					synchronized (this) {
-						idRecord += 1;
-					}
+				//System.out.println("--Thread name:" + Thread.currentThread().getName());
+				ctx.emitWatermark(new Watermark(System.currentTimeMillis()));
+				synchronized (this) {
+					idRecord += 1;
 				}
 			}
 		}
@@ -134,7 +132,6 @@ public class CheckStateWordCount {
 		@Override
 		public void cancel() {
 			isRunning = false;
-			
 		}
 
 		@Override
