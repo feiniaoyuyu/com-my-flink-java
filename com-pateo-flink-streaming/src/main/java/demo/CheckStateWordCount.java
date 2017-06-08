@@ -67,7 +67,7 @@ public class CheckStateWordCount {
 
 		inputDS
 		.keyBy(0)
-		.countWindowAll(1) // 接收到的數量
+		.countWindowAll(10) // 接收到的數量
 		.process(new MyProcessAllWindowFunction())
 		.map(new MapFunction<Tuple2<String,Integer>, Tuple2<Text,LongWritable>>() {
  
