@@ -28,7 +28,6 @@ import org.apache.flink.util.Collector;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 
-import scala.reflect.internal.Trees.This;
 
 public class CheckStateWordCount {
 
