@@ -14,6 +14,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.CheckpointingMode;
+import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.checkpoint.ListCheckpointed;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -44,7 +45,8 @@ public class CheckStateWordCount {
 		env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
 		// make sure 500 ms of progress happen between checkpoints
 		env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500);
-
+		env.setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
+		
 		// checkpoints have to complete within one minute, or are discarded
 		env.getCheckpointConfig().setCheckpointTimeout(6000);
 		
@@ -153,7 +155,7 @@ public class CheckStateWordCount {
 			for (Tuple2<String, Integer> tuple2 : paramList) 
 			{
 				this.idRecord = tuple2.f1;
-				this.exception = tuple2.f0;
+				this.exception = "1234321";
 			}
 		}
 
