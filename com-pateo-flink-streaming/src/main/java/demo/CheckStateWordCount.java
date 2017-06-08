@@ -63,11 +63,11 @@ public class CheckStateWordCount {
 
 		DataStreamSource<Tuple2<String, Integer>> inputDS = env.addSource(WordSourceCheckpoint.create(10000));
 
-		inputDS.print();
+		//inputDS.print();
 
 		inputDS
 		.keyBy(0)
-		.countWindowAll(10) // 接收到的數量
+		.countWindowAll(1) // 接收到的數量
 		.process(new MyProcessAllWindowFunction())
 		.map(new MapFunction<Tuple2<String,Integer>, Tuple2<Text,LongWritable>>() {
  
