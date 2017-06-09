@@ -67,7 +67,7 @@ public class CheckStateWordCount {
 
 		inputDS
 		.keyBy(0)
-		.countWindowAll(10) // 接收到的數量
+		.countWindowAll(1) // 接收到的數量
 		.process(new MyProcessAllWindowFunction())
 		.map(new MapFunction<Tuple2<String,Integer>, Tuple2<Text,LongWritable>>() {
  
@@ -97,6 +97,7 @@ public class CheckStateWordCount {
 				"Jordan", "DuLante", "Zhouqi", "Kaka", "Yaoming", "Maidi",
 				"YiJianlian" };
 		private volatile int totalCot= 0;
+
 		// private Random rand = new Random();
 		private volatile boolean isRunning = true;
 		private volatile int sleepTime = 1;
@@ -120,23 +121,25 @@ public class CheckStateWordCount {
 				org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext<Tuple2<String, Integer>> ctx)
 				throws Exception {
 			
+			final Object lock = ctx.getCheckpointLock();
+
 			while (isRunning && idRecord <= totalCot ) { //
 				Thread.sleep(sleepTime);
 				
 				Tuple2<String, Integer> record = new Tuple2<>(words[idRecord % words.length], 1);
-				ctx.collectWithTimestamp(record, System.currentTimeMillis());
-
-				//System.out.println("--Thread name:" + Thread.currentThread().getName());
-				ctx.emitWatermark(new Watermark(System.currentTimeMillis()));
+				
+				synchronized (lock) {
+					idRecord += 1;
+					ctx.collectWithTimestamp(record, System.currentTimeMillis());
+					//System.out.println("--Thread name:" + Thread.currentThread().getName());
+					ctx.emitWatermark(new Watermark(System.currentTimeMillis() - 1) );
+ 				}
+				
 				if (idRecord==999 && exception.equals( "0")) {
 					System.out.println(System.currentTimeMillis() + "===========idRecord============" +idRecord);
-
 					exception = "112211";
-					idRecord = 999 -1;
+//					idRecord = 999 -1;
 					throw new Exception("reach cnt " + idRecord);
-				}
-				synchronized (this) {
-					idRecord += 1;
 				}
 			}
 		}
@@ -161,10 +164,11 @@ public class CheckStateWordCount {
 				throws Exception {
 			for (Tuple2<String, Integer> tuple2 : paramList) 
 			{
-				System.out.println(System.currentTimeMillis() + "===========restoreState============" +idRecord);
+				System.out.println(System.currentTimeMillis() + "===========restoreState exception ============" +tuple2.f0);
+				System.out.println(System.currentTimeMillis() + "===========restoreState idRecord ============" +tuple2.f1);
 
-				this.idRecord = tuple2.f1;
 				this.exception = tuple2.f0;
+				this.idRecord = tuple2.f1;
 			}
 		}
 
@@ -172,6 +176,7 @@ public class CheckStateWordCount {
 		public List<Tuple2<String, Integer>> snapshotState(long paramLong1,
 				long paramLong2) throws Exception {
 			System.out.println(System.currentTimeMillis() + "===========snapshotState============" +idRecord);
+			System.out.println(System.currentTimeMillis() + "===========snapshotState============" +exception);
 
 			return Collections.singletonList(new Tuple2<String, Integer>(this.exception, this.idRecord));
 		}
