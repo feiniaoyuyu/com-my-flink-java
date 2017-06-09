@@ -6,6 +6,7 @@ import java.util.List;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichFunction;
+import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.MapStateDescriptor;
@@ -67,7 +68,7 @@ public class CheckStateWordCount {
 
 		inputDS
 		.keyBy(0)
-		.countWindowAll(1) // 接收到的數量
+		.countWindowAll(10) // 接收到的數量
 		.process(new MyProcessAllWindowFunction())
 		.map(new MapFunction<Tuple2<String,Integer>, Tuple2<Text,LongWritable>>() {
  
@@ -97,7 +98,13 @@ public class CheckStateWordCount {
 				"Jordan", "DuLante", "Zhouqi", "Kaka", "Yaoming", "Maidi",
 				"YiJianlian" };
 		private volatile int totalCot= 0;
-
+		@Override
+		public void setRuntimeContext(RuntimeContext t) {
+		
+			super.setRuntimeContext(t);
+			
+			
+		}
 		// private Random rand = new Random();
 		private volatile boolean isRunning = true;
 		private volatile int sleepTime = 1;
@@ -138,7 +145,9 @@ public class CheckStateWordCount {
 				if (idRecord==999 && exception.equals( "0")) {
 					exception = "112211";
 //					idRecord = 999 -1;
-					System.out.println(System.currentTimeMillis() + "===========idRecord==999============" +idRecord);
+					snapshotState(serialVersionUID, serialVersionUID);
+					
+					System.out.println(System.currentTimeMillis() + "===========idRecord==999=============" +idRecord);
 					System.out.println(System.currentTimeMillis() + "===========exception==999============" +exception);
 
 					throw new Exception("reach cnt " + idRecord);
@@ -148,17 +157,17 @@ public class CheckStateWordCount {
 
 		@Override
 		public void cancel() {
-			System.out.println(System.currentTimeMillis() + "===========cancel============" +idRecord);
-			System.out.println(System.currentTimeMillis() + "===========cancel============" +idRecord);
+			System.out.println(System.currentTimeMillis() + "===========idRecord=============" +idRecord);
+			System.out.println(System.currentTimeMillis() + "===========exception============" +exception);
 
 			isRunning = false;
 		}
 
 		@Override
 		public void close() throws Exception {
-			System.out.println(System.currentTimeMillis() + "===========close idRecord============" +idRecord);
+			System.out.println(System.currentTimeMillis() + "===========close idRecord ============" +idRecord);
 			System.out.println(System.currentTimeMillis() + "===========close exception============" +exception);
-
+			//getRuntimeContext().
 			isRunning = false;
 			super.close();
 		}
@@ -168,7 +177,7 @@ public class CheckStateWordCount {
 				throws Exception {
 			for (Tuple2<String, Integer> tuple2 : paramList) 
 			{
-				System.out.println(System.currentTimeMillis() + "===========restoreState exception ============" +tuple2.f0);
+				System.out.println(System.currentTimeMillis() + "===========restoreState exception============" +tuple2.f0);
 				System.out.println(System.currentTimeMillis() + "===========restoreState idRecord ============" +tuple2.f1);
 
 				this.exception = tuple2.f0;
@@ -179,8 +188,8 @@ public class CheckStateWordCount {
 		@Override
 		public List<Tuple2<String, Integer>> snapshotState(long paramLong1,
 				long paramLong2) throws Exception {
-			System.out.println(System.currentTimeMillis() + "===========snapshotState============" +idRecord);
-			System.out.println(System.currentTimeMillis() + "===========snapshotState============" +exception);
+			System.out.println(System.currentTimeMillis() + "===========snapshotState idRecord ============" +idRecord);
+			System.out.println(System.currentTimeMillis() + "===========snapshotState exception============" +exception);
 
 			return Collections.singletonList(new Tuple2<String, Integer>(this.exception, this.idRecord));
 		}
