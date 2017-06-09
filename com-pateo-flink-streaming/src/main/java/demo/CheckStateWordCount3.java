@@ -16,6 +16,7 @@ import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.base.MapSerializer;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.state.CheckpointListener;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.checkpoint.ListCheckpointed;
@@ -33,7 +34,7 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 
 
-public class CheckStateWordCount {
+public class CheckStateWordCount3 {
 
 	public static void main(String[] args) {
 
@@ -93,7 +94,7 @@ public class CheckStateWordCount {
 	}
 
 	private static class WordSourceCheckpoint extends
-			RichSourceFunction<Tuple2<String, Integer>> implements ListCheckpointed<Tuple2<String, Integer>> {
+			RichSourceFunction<Tuple2<String, Integer>> implements ListCheckpointed<Tuple2<String, Integer>>, CheckpointListener{
 		private static final long serialVersionUID = 1L;
 		private static final String[] words = { "James", "Kobe", "Antony",
 				"Jordan", "DuLante", "Zhouqi", "Kaka", "Yaoming", "Maidi",
@@ -207,6 +208,13 @@ public class CheckStateWordCount {
 			System.out.println(System.currentTimeMillis() + "===========snapshotState exception============" +exception);
 
 			return Collections.singletonList(new Tuple2<String, Integer>(this.exception, this.idRecord));
+		}
+
+		@Override
+		public void notifyCheckpointComplete(long checkpointId)
+				throws Exception {
+			this.snapid.setField(checkpointId, 0);
+			
 		}
 	}
 
