@@ -73,7 +73,6 @@ public class CheckStateWordCount {
 		.map(new MapFunction<Tuple2<String,Integer>, Tuple2<Text,LongWritable>>() {
  
 			private static final long serialVersionUID = 1L;
-
 			@Override
 			public Tuple2<Text, LongWritable> map(Tuple2<String, Integer> value)
 					throws Exception {
@@ -100,13 +99,10 @@ public class CheckStateWordCount {
 		private volatile int totalCot= 0;
 		private volatile Tuple2<Long, Long> snapID = new Tuple2<>(0L,0L);
 
-		@Override
-		public void setRuntimeContext(RuntimeContext t) {
-		
-			super.setRuntimeContext(t);
-			
-			
-		}
+//		@Override
+//		public void setRuntimeContext(RuntimeContext t) {
+//			super.setRuntimeContext(t);
+//		}
 		// private Random rand = new Random();
 		private volatile boolean isRunning = true;
 		private volatile int sleepTime = 1;
@@ -148,7 +144,7 @@ public class CheckStateWordCount {
 					exception = "112211";
 					snapshotState(serialVersionUID, System.currentTimeMillis());
 
-					Thread.sleep(2000);
+					//Thread.sleep(2000);
 					System.out.println(System.currentTimeMillis() + "===========idRecord==999=============" +idRecord);
 					System.out.println(System.currentTimeMillis() + "===========exception==999============" +exception);
 
