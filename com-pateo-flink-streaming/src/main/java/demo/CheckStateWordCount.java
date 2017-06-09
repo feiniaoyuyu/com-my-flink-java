@@ -142,7 +142,7 @@ public class CheckStateWordCount {
 				
 				if (idRecord==2999 && exception.equals( "0")) {
 					exception = "112211";
-					snapshotState(serialVersionUID, System.currentTimeMillis());
+					snapshotState(this.snapID.f0+1, System.currentTimeMillis());
 
 					//Thread.sleep(2000);
 					System.out.println(System.currentTimeMillis() + "===========idRecord==999=============" +idRecord);
@@ -186,12 +186,12 @@ public class CheckStateWordCount {
 		@Override
 		public List<Tuple2<String, Integer>> snapshotState(long paramLong1,
 				long paramLong2) throws Exception {
+			this.snapID = new Tuple2<>(paramLong1,snapID.f1+1);
  
-			if (paramLong1 > snapID.f0) {
-				this.snapID = new Tuple2<>(paramLong1,snapID.f1+1);
-			}else {
-				this.snapID = new Tuple2<>(snapID.f0+1,snapID.f1+1);
-			}
+//			if (paramLong1 > snapID.f0) {
+//			}else {
+//				this.snapID = new Tuple2<>(snapID.f0+1,snapID.f1+1);
+//			}
 			System.out.println("======"+paramLong1 + "=====" +paramLong2);
 			System.out.println(System.currentTimeMillis() + "===========snapshotState idRecord ============" +idRecord);
 			System.out.println(System.currentTimeMillis() + "===========snapshotState exception============" +exception);
