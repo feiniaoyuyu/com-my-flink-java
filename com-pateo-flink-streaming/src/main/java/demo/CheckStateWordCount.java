@@ -6,14 +6,11 @@ import java.util.List;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichFunction;
-import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.common.typeutils.base.MapSerializer;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.CheckpointingMode;
@@ -44,7 +41,7 @@ public class CheckStateWordCount {
 		// env.getConfig().setGlobalJobParameters(params);
 		 env.enableCheckpointing(1000);
 		// env.setBufferTimeout(100);
-		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(10, org.apache.flink.api.common.time.Time.seconds(10)));
+		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(5, org.apache.flink.api.common.time.Time.seconds(5)));
 		env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
 		// make sure 500 ms of progress happen between checkpoints
 		env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500);
@@ -106,7 +103,7 @@ public class CheckStateWordCount {
 //		}
 		// private Random rand = new Random();
 		private volatile boolean isRunning = true;
-		private volatile int sleepTime = 1;
+		private volatile int sleepTime = 3;
 		private volatile int idRecord = 0;
 		private volatile String exception = "0";
 		private volatile Tuple2<Long, Long> snapid = new Tuple2<>(0L,0L);
@@ -146,7 +143,7 @@ public class CheckStateWordCount {
 					ctx.emitWatermark(new Watermark(System.currentTimeMillis() - 1) );
  				}
 				
-				if (idRecord==2999 && exception.equals( "0")) {
+				if (idRecord==2999 && exception.equals("10")) {
 					exception = "112211";
 					
 					System.out.println(System.currentTimeMillis() + "===========snapid.f0 ===============" +snapid.f0  );

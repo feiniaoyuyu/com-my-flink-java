@@ -6,14 +6,11 @@ import java.util.List;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichFunction;
-import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.MapStateDescriptor;
 import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.api.common.typeutils.base.MapSerializer;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.state.CheckpointListener;
@@ -154,7 +151,7 @@ public class CheckStateWordCount3 {
 
 					snapshotState(snapid.f0 +1, System.currentTimeMillis());
 					
-					//Thread.sleep(2000);
+					Thread.sleep(2000);
 					System.out.println(System.currentTimeMillis() + "===========idRecord==999=============" +idRecord);
 					System.out.println(System.currentTimeMillis() + "===========exception==999============" +exception);
 
@@ -214,7 +211,7 @@ public class CheckStateWordCount3 {
 		public void notifyCheckpointComplete(long checkpointId)
 				throws Exception {
 			this.snapid.setField(checkpointId, 0);
-			
+			System.out.println(System.currentTimeMillis() + "===========notifyCheckpointComplete ============" +checkpointId);
 		}
 	}
 
