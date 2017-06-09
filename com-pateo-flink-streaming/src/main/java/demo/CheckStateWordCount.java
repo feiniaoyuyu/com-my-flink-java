@@ -142,9 +142,8 @@ public class CheckStateWordCount {
 					ctx.emitWatermark(new Watermark(System.currentTimeMillis() - 1) );
  				}
 				
-				if (idRecord==999 && exception.equals( "0")) {
+				if (idRecord==2999 && exception.equals( "0")) {
 					exception = "112211";
-//					idRecord = 999 -1;
 					snapshotState(serialVersionUID, serialVersionUID);
 					Thread.sleep(1000);
 					System.out.println(System.currentTimeMillis() + "===========idRecord==999=============" +idRecord);
@@ -157,8 +156,8 @@ public class CheckStateWordCount {
 
 		@Override
 		public void cancel() {
-			System.out.println(System.currentTimeMillis() + "===========idRecord=============" +idRecord);
-			System.out.println(System.currentTimeMillis() + "===========exception============" +exception);
+			System.out.println(System.currentTimeMillis() + "===========cancel idRecord=============" +idRecord);
+			System.out.println(System.currentTimeMillis() + "===========cancel exception============" +exception);
 
 			isRunning = false;
 		}
@@ -188,6 +187,7 @@ public class CheckStateWordCount {
 		@Override
 		public List<Tuple2<String, Integer>> snapshotState(long paramLong1,
 				long paramLong2) throws Exception {
+			System.out.println("======"+paramLong1 + "=====" +paramLong2);
 			System.out.println(System.currentTimeMillis() + "===========snapshotState idRecord ============" +idRecord);
 			System.out.println(System.currentTimeMillis() + "===========snapshotState exception============" +exception);
 
