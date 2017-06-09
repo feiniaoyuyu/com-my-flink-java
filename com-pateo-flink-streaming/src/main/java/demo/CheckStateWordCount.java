@@ -98,6 +98,8 @@ public class CheckStateWordCount {
 				"Jordan", "DuLante", "Zhouqi", "Kaka", "Yaoming", "Maidi",
 				"YiJianlian" };
 		private volatile int totalCot= 0;
+		private volatile Tuple2<Long, Long> snapID = new Tuple2<>(0L,0L);
+
 		@Override
 		public void setRuntimeContext(RuntimeContext t) {
 		
@@ -144,8 +146,9 @@ public class CheckStateWordCount {
 				
 				if (idRecord==2999 && exception.equals( "0")) {
 					exception = "112211";
-					snapshotState(serialVersionUID, serialVersionUID);
-					Thread.sleep(1000);
+					snapshotState(serialVersionUID, System.currentTimeMillis());
+
+					Thread.sleep(2000);
 					System.out.println(System.currentTimeMillis() + "===========idRecord==999=============" +idRecord);
 					System.out.println(System.currentTimeMillis() + "===========exception==999============" +exception);
 
@@ -187,6 +190,7 @@ public class CheckStateWordCount {
 		@Override
 		public List<Tuple2<String, Integer>> snapshotState(long paramLong1,
 				long paramLong2) throws Exception {
+			this.snapID = new Tuple2<>(snapID.f0+1,snapID.f1+1);
 			System.out.println("======"+paramLong1 + "=====" +paramLong2);
 			System.out.println(System.currentTimeMillis() + "===========snapshotState idRecord ============" +idRecord);
 			System.out.println(System.currentTimeMillis() + "===========snapshotState exception============" +exception);
