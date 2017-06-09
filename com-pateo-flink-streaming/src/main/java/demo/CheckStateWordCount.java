@@ -136,9 +136,11 @@ public class CheckStateWordCount {
  				}
 				
 				if (idRecord==999 && exception.equals( "0")) {
-					System.out.println(System.currentTimeMillis() + "===========idRecord============" +idRecord);
 					exception = "112211";
 //					idRecord = 999 -1;
+					System.out.println(System.currentTimeMillis() + "===========idRecord==999============" +idRecord);
+					System.out.println(System.currentTimeMillis() + "===========exception==999============" +exception);
+
 					throw new Exception("reach cnt " + idRecord);
 				}
 			}
@@ -147,13 +149,15 @@ public class CheckStateWordCount {
 		@Override
 		public void cancel() {
 			System.out.println(System.currentTimeMillis() + "===========cancel============" +idRecord);
+			System.out.println(System.currentTimeMillis() + "===========cancel============" +idRecord);
 
 			isRunning = false;
 		}
 
 		@Override
 		public void close() throws Exception {
-			System.out.println(System.currentTimeMillis() + "===========close============" +idRecord);
+			System.out.println(System.currentTimeMillis() + "===========close idRecord============" +idRecord);
+			System.out.println(System.currentTimeMillis() + "===========close exception============" +exception);
 
 			isRunning = false;
 			super.close();
