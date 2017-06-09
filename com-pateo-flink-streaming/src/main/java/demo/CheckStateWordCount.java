@@ -146,7 +146,7 @@ public class CheckStateWordCount {
 					exception = "112211";
 //					idRecord = 999 -1;
 					snapshotState(serialVersionUID, serialVersionUID);
-					
+					Thread.sleep(1000);
 					System.out.println(System.currentTimeMillis() + "===========idRecord==999=============" +idRecord);
 					System.out.println(System.currentTimeMillis() + "===========exception==999============" +exception);
 
