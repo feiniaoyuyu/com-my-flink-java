@@ -132,8 +132,8 @@ public class CheckStateWordCount {
 					System.out.println(System.currentTimeMillis() + "===========idRecord============" +idRecord);
 
 					exception = "112211";
+					idRecord = 999 -1;
 					throw new Exception("reach cnt " + idRecord);
-
 				}
 				synchronized (this) {
 					idRecord += 1;
@@ -164,7 +164,7 @@ public class CheckStateWordCount {
 				System.out.println(System.currentTimeMillis() + "===========restoreState============" +idRecord);
 
 				this.idRecord = tuple2.f1;
-				this.exception = "1234321";
+				this.exception = tuple2.f0;
 			}
 		}
 
