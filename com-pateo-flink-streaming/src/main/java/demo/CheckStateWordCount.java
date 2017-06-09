@@ -109,10 +109,7 @@ public class CheckStateWordCount {
 		private volatile int sleepTime = 1;
 		private volatile int idRecord = 0;
 		private volatile String exception = "0";
-		MapState<String, Long> mapState ;
-		String snapid = "snapid";
-		String snapidTimeStamp = "snapidTimeStamp";
-		
+		private volatile Tuple2<Long, Long> snapid = new Tuple2<>(0L,0L);
 		
 		private WordSourceCheckpoint(int numOfIter) {
 			totalCot = numOfIter;
@@ -125,9 +122,9 @@ public class CheckStateWordCount {
 		@Override
 		public void open(Configuration parameters) throws Exception {
 			super.open(parameters);
-			mapState = getRuntimeContext().getMapState(new MapStateDescriptor<>("kvs", 
-					TypeInformation.of(new TypeHint<String>() {}),
-					TypeInformation.of(new TypeHint<Long>() {}) ));
+//			mapState = getRuntimeContext().getMapState(new MapStateDescriptor<>("kvs", 
+//					TypeInformation.of(new TypeHint<String>() {}),
+//					TypeInformation.of(new TypeHint<Long>() {}) ));
  		}
 
 		@Override
@@ -152,11 +149,11 @@ public class CheckStateWordCount {
 				if (idRecord==2999 && exception.equals( "0")) {
 					exception = "112211";
 					
-					System.out.println(System.currentTimeMillis() + "===========snapid===============" +mapState.get(snapid));
+					System.out.println(System.currentTimeMillis() + "===========snapid.f0 ===============" +snapid.f0  );
 
-					snapshotState(mapState.get(snapid)+1, System.currentTimeMillis());
+					snapshotState(snapid.f0 +1, System.currentTimeMillis());
 					
-					//Thread.sleep(2000);
+					Thread.sleep(2000);
 					System.out.println(System.currentTimeMillis() + "===========idRecord==999=============" +idRecord);
 					System.out.println(System.currentTimeMillis() + "===========exception==999============" +exception);
 
@@ -198,10 +195,7 @@ public class CheckStateWordCount {
 		@Override
 		public List<Tuple2<String, Integer>> snapshotState(long paramLong1,
 				long paramLong2) throws Exception {
-//			this.snapID = new Tuple2<>(paramLong1,snapID.f1+1);
-
-			mapState.put(snapid, paramLong1);
-			mapState.put(snapidTimeStamp, paramLong2);
+			this.snapid = new Tuple2<>(paramLong1,paramLong2);
 
 //			if (paramLong1 > snapID.f0) {
 //			}else {
