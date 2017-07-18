@@ -98,7 +98,7 @@ public class Test {
 	
 }
 
-class MyRichFunction222 extends RichFlatMapFunction<String,String> implements RichFunction{
+class MyRichFunction22 extends RichFlatMapFunction<String,String> implements RichFunction{
 	 
 	private static final long serialVersionUID = 1L;
 	

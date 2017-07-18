@@ -44,22 +44,17 @@ public class StateWordCount {
 //		env.enableCheckpointing(1000);
 //		env.setBufferTimeout(100);
 //		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(10, org.apache.flink.api.common.time.Time.seconds(10)));
+		
 		env.setMaxParallelism(4);
+		
 		int defaultLocalParallelism = StreamExecutionEnvironment.getDefaultLocalParallelism();
-		StreamExecutionEnvironment.setDefaultLocalParallelism(1);
 		System.out.println( "defaultLocalParallelism :" +defaultLocalParallelism );
 		// get input data
-		DataStreamSource<Tuple2<String, Integer>> inputDS = env.addSource( WordSourceCheckpoint.create(1));
+		DataStreamSource<Tuple2<String, Integer>> inputDS = env.setParallelism(2).addSource( WordSourceCheckpoint.create(100));
 		
-		//inputDS.countWindowAll(100).sum(1).setMaxParallelism(1).print();
-		
-//		env.fromElements(Tuple2.of(1L, 3L), Tuple2.of(1L, 5L), Tuple2.of(1L, 7L), Tuple2.of(1L, 4L), Tuple2.of(1L, 2L))
-//        .keyBy(0)
-//        //.flatMap(new CountWindowAverage())
-//        .print();
-		
-		
-		inputDS
+		inputDS.countWindowAll(10).sum(1).setMaxParallelism(1).print(); //指定数量触发
+		 
+//		inputDS
 		//.setParallelism(1)
 //		.keyBy(0)
 		//.sum(1)
@@ -83,7 +78,7 @@ public class StateWordCount {
 //			}
 //		})
 		//.trigger(new Trigger<T, Window>)
-		.print();
+//		.print();
 
 		//		map.keyBy(0).sum(1).writeAsText("hdfs:///tmp/path/result", WriteMode.OVERWRITE);
 //		Object job;
@@ -134,14 +129,13 @@ public class StateWordCount {
 				for (int id = 0; id < words.length; id++) {
 					Tuple2<String, Integer> record = new Tuple2<>(words[id], 1);
 					ctx.collectWithTimestamp(record, System.currentTimeMillis());
-					ctx.collect(record);
-					System.out.println("--Thread name:" + Thread.currentThread().getName());
-
-					ctx.emitWatermark(new Watermark(System.currentTimeMillis()));
+					//System.out.println("--Thread name:" + Thread.currentThread().getName());
+					System.out.println("--getTaskNameWithSubtasks --:" + getRuntimeContext().getTaskName());
+					ctx.emitWatermark(new Watermark(System.currentTimeMillis() - 1));
 				}
 				synchronized (this) {
 					iteratorTime -= 1;
-					System.out.println("--Thread iteratorTime:" + Thread.currentThread().getName());
+					//System.out.println("--Thread iteratorTime:" + Thread.currentThread().getName());
 				}
 			}
 		}

@@ -1,8 +1,5 @@
 package demo;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichFunction;
@@ -13,13 +10,13 @@ import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.state.CheckpointListener;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.checkpoint.ListCheckpointed;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks;
-import org.apache.flink.streaming.api.functions.source.RichSourceFunction;
+import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
@@ -30,19 +27,11 @@ import org.apache.flink.util.Collector;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 
-/**
- * 
- * /data/flink-1.3.0/bin/flink run -c demo.CheckStateWordCount /data/sparkjob/com-my-flink-java/com-pateo-flink-streaming/target/com-pateo-flink-streaming-1.0.jar 
- * 
- * /data/flink-1.3.0/bin/flink cancel -s hdfs:///tmp/path/sp  905e5ff13acb1bc7645b5889e88d9648
- *
- * /data/flink-1.3.0/bin/flink run -s hdfs:/tmp/path/sp/savepoint-905e5f-1683d103c630 -c demo.CheckStateWordCount /data/sparkjob/com-my-flink-java/com-pateo-flink-streaming/target/com-pateo-flink-streaming-1.0.jar
- * 
- * hdfs -text /tmp/path/wc/2017-07-17-18-59/_part-0-12.pending ;
- * @author sh04595
- *
- */
-public class CheckStateWordCount {
+import java.util.Collections;
+import java.util.List;
+
+
+public class CheckStateWordCount4 {
 
 	public static void main(String[] args) {
 
@@ -53,7 +42,7 @@ public class CheckStateWordCount {
 		// env.getConfig().setGlobalJobParameters(params);
 		 env.enableCheckpointing(1000);
 		// env.setBufferTimeout(100);
-		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(5, org.apache.flink.api.common.time.Time.seconds(5)));
+		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(10, org.apache.flink.api.common.time.Time.seconds(10)));
 		env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
 		// make sure 500 ms of progress happen between checkpoints
 		env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500);
@@ -61,7 +50,7 @@ public class CheckStateWordCount {
 		
 		// checkpoints have to complete within one minute, or are discarded
 		env.getCheckpointConfig().setCheckpointTimeout(6000);
-
+		
 		int defaultLocalParallelism = StreamExecutionEnvironment.getDefaultLocalParallelism();
 		//StreamExecutionEnvironment.setDefaultLocalParallelism(1);
 		System.out.println("defaultLocalParallelism :" + defaultLocalParallelism);
@@ -74,31 +63,15 @@ public class CheckStateWordCount {
 		sink.setBatchSize((long) (1024 * 1024 * 0.01)); // 1024 * 1024 * 400 this is 400 MB,
 
 		DataStreamSource<Tuple2<String, Integer>> inputDS = env.addSource(WordSourceCheckpoint.create(10000));
-		
-		//inputDS.print();
-		inputDS.assignTimestampsAndWatermarks(new AssignerWithPeriodicWatermarks<Tuple2<String,Integer>>() {
-			 
-			private static final long serialVersionUID = 1L;
 
-			@Override
-			public long extractTimestamp(Tuple2<String, Integer> element,
-					long previousElementTimestamp) {
-			
-				return 0;
-			}
-			
-			@Override
-			public Watermark getCurrentWatermark() {
-			
-				return null;
-			}
-		})
- 
+		//inputDS.print();
+
+		inputDS
 		.keyBy(0)
 		.countWindowAll(10) // 接收到的數量
 		.process(new MyProcessAllWindowFunction())
 		.map(new MapFunction<Tuple2<String,Integer>, Tuple2<Text,LongWritable>>() {
-			
+ 
 			private static final long serialVersionUID = 1L;
 			@Override
 			public Tuple2<Text, LongWritable> map(Tuple2<String, Integer> value)
@@ -118,7 +91,7 @@ public class CheckStateWordCount {
 	}
 
 	private static class WordSourceCheckpoint extends
-			RichSourceFunction<Tuple2<String, Integer>> implements ListCheckpointed<Tuple2<String, Integer>> {
+	RichParallelSourceFunction<Tuple2<String, Integer>> implements ListCheckpointed<Tuple2<String, Integer>>, CheckpointListener{
 		private static final long serialVersionUID = 1L;
 		private static final String[] words = { "James", "Kobe", "Antony",
 				"Jordan", "DuLante", "Zhouqi", "Kaka", "Yaoming", "Maidi",
@@ -131,11 +104,10 @@ public class CheckStateWordCount {
 //		}
 		// private Random rand = new Random();
 		private volatile boolean isRunning = true;
-		private volatile int sleepTime = 3;
+		private volatile int sleepTime = 1;
 		private volatile int idRecord = 0;
 		private volatile String exception = "0";
-		private volatile Tuple2<Long, Long> snapid = new Tuple2<>(0L,0L);
-		
+ 		
 		private WordSourceCheckpoint(int numOfIter) {
 			totalCot = numOfIter;
 		}
@@ -167,18 +139,15 @@ public class CheckStateWordCount {
 				synchronized (lock) {
 					idRecord += 1;
 					ctx.collectWithTimestamp(record, System.currentTimeMillis());
-					//System.out.println("--Thread name:" + Thread.currentThread().getName());
+					System.out.println(System.currentTimeMillis() + "===========Thread name:" + Thread.currentThread().getName() );
+
 					ctx.emitWatermark(new Watermark(System.currentTimeMillis() - 1) );
  				}
 				
-				if (idRecord==2999 && exception.equals("10")) {
+				if (idRecord==2999 && exception.equals( "10")) {
 					exception = "112211";
-					
-					System.out.println(System.currentTimeMillis() + "===========snapid.f0 ===============" +snapid.f0  );
-
-					snapshotState(snapid.f0 +1, System.currentTimeMillis());
-					
-					//Thread.sleep(2000);
+					 
+					Thread.sleep(2000);
 					System.out.println(System.currentTimeMillis() + "===========idRecord==999=============" +idRecord);
 					System.out.println(System.currentTimeMillis() + "===========exception==999============" +exception);
 
@@ -220,18 +189,18 @@ public class CheckStateWordCount {
 		@Override
 		public List<Tuple2<String, Integer>> snapshotState(long paramLong1,
 				long paramLong2) throws Exception {
-			this.snapid = new Tuple2<>(paramLong1,paramLong2);
-
-//			if (paramLong1 > snapID.f0) {
-//			}else {
-//				this.snapID = new Tuple2<>(snapID.f0+1,snapID.f1+1);
-//			}
-			
+  
 			System.out.println("======"+paramLong1 + "=====" +paramLong2);
 			System.out.println(System.currentTimeMillis() + "===========snapshotState idRecord ============" +idRecord);
 			System.out.println(System.currentTimeMillis() + "===========snapshotState exception============" +exception);
 
 			return Collections.singletonList(new Tuple2<String, Integer>(this.exception, this.idRecord));
+		}
+
+		@Override
+		public void notifyCheckpointComplete(long checkpointId)
+				throws Exception {
+ 			System.out.println(System.currentTimeMillis() + "===========notifyCheckpointComplete ============" +checkpointId);
 		}
 	}
 

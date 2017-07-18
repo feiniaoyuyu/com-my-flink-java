@@ -14,25 +14,18 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
-		<flink.version>1.3.0</flink.version>
+		
+		<scala.compile.version>2.10</scala.compile.version>
 	</properties>
 
 	<dependencies>
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-table_2.10</artifactId>
-			<version>${flink.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-cep-scala_2.10</artifactId>
-			<version>${flink.version}</version>
-		</dependency>
+
 	</dependencies>
 	<modules>
 		<module>com-pateo-flink-java-batch</module>
 
 		<module>com-pateo-flink-streaming</module>
-	</modules>
+        <module>testpart</module>
+    </modules>
 </project>
 
